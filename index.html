@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS en Tiempo Real - Agencias, Guías y Reportes</title>
+    <title>POS en Tiempo Real - Visitas, Stock y Reportes Detallados</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -169,11 +169,11 @@
             </div>
         </div>
 
-        <!-- MODAL DE RENDICIÓN Y EXPORTACIÓN DE REPORTES -->
+        <!-- MODAL DE RENDICIÓN Y REPORTE DETALLADO -->
         <div id="modal-rendicion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Rendición y Reportes</h3>
+                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Rendición y Reportes de Stock</h3>
                     <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
                 </div>
                 
@@ -184,9 +184,9 @@
                         <span class="block text-[10px] text-indigo-400 mt-1" id="rendicion-total-ops">0 operaciones registradas</span>
                     </div>
 
-                    <!-- MÓDULO DE EXPORTACIÓN A EXCEL / CSV -->
+                    <!-- MÓDULO DE EXPORTACIÓN CON DETALLE DE PRODUCTOS -->
                     <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-emerald-900 text-xs flex items-center gap-1">📥 Descargar Reporte Personalizado</h4>
+                        <h4 class="font-bold text-emerald-900 text-xs flex items-center gap-1">📥 Descargar Reporte de Ventas y Productos</h4>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Desde:</label>
@@ -198,7 +198,7 @@
                             </div>
                         </div>
                         <button onclick="exportarReporteExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition shadow text-xs mt-1">
-                            📊 Descargar Excel (.csv)
+                            📊 Descargar Excel Detallado (.csv)
                         </button>
                     </div>
 
@@ -307,7 +307,6 @@
             configurarScrollCategorias();
             sincronizarConFirebase();
 
-            // Setea fecha de hoy en los campos del reporte
             const hoy = new Date().toISOString().split('T')[0];
             document.getElementById('reporte-fecha-desde').value = hoy;
             document.getElementById('reporte-fecha-hasta').value = hoy;
@@ -563,7 +562,7 @@
 
         window.abrirModalCobro = function() {
             if (carrito.length === 0) {
-                alert("El carrito está vacío.");
+                alert("El carrito está vacío. Agregue productos o una visita.");
                 return;
             }
 
@@ -604,8 +603,13 @@
 
             const batch = writeBatch(db);
 
+            // Descontar stock y armar el detalle de productos vendidos
+            let productosVendidosResumen = [];
+
             for (let itemCarrito of carrito) {
                 const esCombo = Boolean((itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') || itemCarrito.categoria.toLowerCase() === 'combos' || itemCarrito.nombre.toLowerCase().includes('combo'));
+
+                productosVendidosResumen.push(`${itemCarrito.nombre} (x${itemCarrito.cantidad})`);
 
                 if (esCombo && itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') {
                     let componentes = obtenerComponentesParseados(itemCarrito.componentesStr);
@@ -643,6 +647,7 @@
                 cantPersonas: cantPersonas,
                 precioUnitario: precioUnitario,
                 total: totalVentaFinal,
+                productosDetalle: productosVendidosResumen.join(" | "),
                 itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
                 timestamp: Date.now()
             });
@@ -653,7 +658,7 @@
             vaciarCarrito();
             renderizarCatalogo();
             limpiarBuscador();
-            alert("¡Venta registrada con éxito!");
+            alert("¡Venta registrada y stock descontado con éxito!");
         }
 
         window.abrirRendicion = function() {
@@ -692,8 +697,9 @@
                                 <span class="font-bold text-slate-800">${v.agencia}</span>
                                 <span class="font-black text-emerald-600">$${v.total.toLocaleString()}</span>
                             </div>
+                            <span class="text-[10px] text-slate-600 bg-slate-100 p-1 rounded">📦 ${v.productosDetalle || 'Sin productos'}</span>
                             <div class="flex justify-between text-[10px] text-slate-500">
-                                <span>Guía: <b>${v.guia}</b> (${v.cantPersonas} pax • $${v.precioUnitario || 0} c/u)</span>
+                                <span>Guía: <b>${v.guia}</b> (${v.cantPersonas} pax)</span>
                                 <span>${v.fecha || ''} ${v.hora} • ${v.vendedor}</span>
                             </div>
                         </div>
@@ -702,7 +708,7 @@
             }
         }
 
-        // FUNCIONALIDAD DE EXPORTACIÓN A EXCEL / CSV
+        // EXPORTACIÓN A EXCEL CON DETALLE DE PRODUCTOS Y AUDITORÍA DE TIEMPO
         window.exportarReporteExcel = function() {
             let fechaDesde = document.getElementById('reporte-fecha-desde').value;
             let fechaHasta = document.getElementById('reporte-fecha-hasta').value;
@@ -721,12 +727,15 @@
             });
 
             if (ventasFiltradas.length === 0) {
-                alert("No se encontraron ventas registrados en las fechas seleccionadas.");
+                alert("No se encontraron ventas registradas en el intervalo de tiempo seleccionado.");
                 return;
             }
 
-            let csvContent = "\uFEFF"; // BOM para acentos en Excel
-            csvContent += "Fecha,Hora,Vendedor,Agencia,Guia,Cant Personas,Precio Unitario,Total Cobrado\n";
+            // ACUMULADOR PARA SABER CUÁNTO SE VENDIó DE CADA PRODUCTO EN TOTAL EN ESE PERIODO
+            let productosAcumulados = {};
+
+            let csvContent = "\uFEFF"; // BOM para Excel
+            csvContent += "Fecha,Hora,Vendedor,Agencia,Guia,Cant Personas,Precio Unitario,Total Cobrado,Productos Vendidos\n";
 
             ventasFiltradas.sort((a,b) => a.timestamp - b.timestamp).forEach(v => {
                 let fila = [
@@ -737,16 +746,43 @@
                     `"${v.guia || 'Sin Guia'}"`,
                     v.cantPersonas || 1,
                     v.precioUnitario || 0,
-                    v.total || 0
+                    v.total || 0,
+                    `"${v.productosDetalle || ''}"`
                 ].join(",");
                 csvContent += fila + "\n";
             });
+
+            // Agregamos una sección extra al final del CSV con el resumen total por producto vendido
+            csvContent += "\n\n--- RESUMEN TOTAL DE PRODUCTOS VENDIDOS EN EL PERIODO ---\n";
+            csvContent += "Producto / Artículo,Cantidad Total Saliente\n";
+
+            ventasFiltradas.forEach(v => {
+                // Parsear el string de productos para sumarlos
+                if (v.productosDetalle) {
+                    let items = v.productosDetalle.split(' | ');
+                    items.forEach(item => {
+                        // Extraer nombre y cantidad (ej: "Vela Chica (x2)")
+                        let match = item.match(/(.+)\(x(\d+)\)/);
+                        if (match) {
+                            let nombreProd = match[1].trim();
+                            let cantProd = parseInt(match[2]) || 1;
+                            productosAcumulados[nombreProd] = (productosAcumulados[nombreProd] || 0) + cantProd;
+                        } else {
+                            productosAcumulados[item] = (productosAcumulados[item] || 0) + 1;
+                        }
+                    });
+                }
+            });
+
+            for (let [prod, cant] of Object.entries(productosAcumulados)) {
+                csvContent += `"${prod}",${cant}\n`;
+            }
 
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let link = document.createElement("a");
             let url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `Reporte_Ventas_${fechaDesde}_al_${fechaHasta}.csv`);
+            link.setAttribute("download", `Reporte_Stock_Ventas_${fechaDesde}_al_${fechaHasta}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -852,7 +888,7 @@
                 { id: "1", codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150, componentesStr: "" },
                 { id: "2", codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80, componentesStr: "" },
                 { id: "3", codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45, componentesStr: "" },
-                { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200, componentesStr: "" },
+                { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", "precio": 800, stock: 200, componentesStr: "" },
                 { id: "5", codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" }
             ];
 
