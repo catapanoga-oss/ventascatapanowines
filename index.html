@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kiosco Religioso - POS Venta Rápida con Combos</title>
+    <title>Kiosco Religioso - POS en Tiempo Real (Firebase)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -51,7 +51,7 @@
                 </button>
             </div>
 
-            <!-- CONTENEDOR DE CATEGORÍAS CON NAVEGACIÓN PC Y MÓVIL -->
+            <!-- CONTENEDOR DE CATEGORÍAS -->
             <div class="relative flex items-center">
                 <button onclick="desplazarCategorias(-100)" class="hidden sm:flex bg-indigo-950 hover:bg-indigo-800 text-indigo-200 text-xs font-bold px-1.5 py-1 rounded-l-lg z-10 items-center justify-center">
                     ‹
@@ -156,14 +156,14 @@
                         <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V..." 
                             class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
                         <button onclick="importarDesdeTextoExcel()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
-                            🚀 Importar Productos y Combos
+                            🚀 Sube a la Nube (Firebase)
                         </button>
                     </div>
 
                     <div class="border-t pt-3 flex justify-between items-center">
-                        <span class="text-slate-500">¿Restablecer valores?</span>
+                        <span class="text-slate-500">¿Restablecer valores iniciales?</span>
                         <button onclick="cargarCatalogoPredeterminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-[11px]">
-                            Cargar Predeterminados
+                            Restablecer
                         </button>
                     </div>
                 </div>
@@ -172,15 +172,29 @@
 
     </div>
 
-    <!-- LÓGICA JAVASCRIPT -->
-    <script>
+    <!-- FIREBASE & LÓGICA JAVASCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyATqzcROVxXUn8uZxhgQMtiF9JoOFXyZvk",
+            authDomain: "vinotecacatapanowines.firebaseapp.com",
+            projectId: "vinotecacatapanowines",
+            storageBucket: "vinotecacatapanowines.firebasestorage.app",
+            messagingSenderId: "505169331108",
+            appId: "1:505169331108:web:dce6a98aefe2b3dc8a7731"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
         const CATALOGO_INICIAL = [
-            { id: 1, codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150 },
-            { id: 2, codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80 },
-            { id: 3, codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45 },
-            { id: 4, codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200 },
-            { id: 5, codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" },
-            { id: 6, codigo: "202", nombre: "Combo 2 (Pack 3 Velas)", categoria: "Combos", precio: 1300, stock: 0, componentesStr: "101:3" }
+            { id: "1", codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150, componentesStr: "" },
+            { id: "2", codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80, componentesStr: "" },
+            { id: "3", codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45, componentesStr: "" },
+            { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200, componentesStr: "" },
+            { id: "5", codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" }
         ];
 
         let catalogo = [];
@@ -189,15 +203,9 @@
         let vendedorActual = "Vendedor 1";
         let categoriaSeleccionada = "TODAS";
 
-        const canalSync = new BroadcastChannel('pos_kiosco_religioso');
-
-        window.onload = function() {
-            cargarEstadoGuardado();
-            configurarSincronizacion();
-            renderizarCategorias();
-            renderizarCatalogo();
-            renderizarCarrito();
+        window.onload = async function() {
             configurarScrollCategorias();
+            await sincronizarConFirebase();
 
             document.getElementById('input-buscador').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
@@ -211,30 +219,33 @@
             });
         };
 
-        function cargarEstadoGuardado() {
-            const catGuardado = localStorage.getItem('kiosco_catalogo');
-            const ventasGuardadas = localStorage.getItem('kiosco_ventas');
-            catalogo = catGuardado ? JSON.parse(catGuardado) : [...CATALOGO_INICIAL];
-            ventas = ventasGuardadas ? JSON.parse(ventasGuardadas) : [];
-        }
-
-        function guardarEstado() {
-            localStorage.setItem('kiosco_catalogo', JSON.stringify(catalogo));
-            localStorage.setItem('kiosco_ventas', JSON.stringify(ventas));
-            canalSync.postMessage({ tipo: 'ACTUALIZACION_ESTADO', catalogo, ventas });
-        }
-
-        function configurarSincronizacion() {
-            canalSync.onmessage = (event) => {
-                if (event.data.tipo === 'ACTUALIZACION_ESTADO') {
-                    catalogo = event.data.catalogo;
-                    ventas = event.data.ventas;
+        // ESCUCHA EN TIEMPO REAL DESDE FIRESTORE
+        async function sincronizarConFirebase() {
+            // Sincronizar Catálogo
+            onSnapshot(collection(db, "catalogo"), (snapshot) => {
+                catalogo = [];
+                snapshot.forEach((doc) => {
+                    catalogo.push({ id: doc.id, ...doc.data() });
+                });
+                
+                if (catalogo.length === 0) {
+                    // Si está vacío, cargamos los iniciales
+                    cargarCatalogoPredeterminado();
+                } else {
+                    renderizarCategorias();
                     renderizarCatalogo();
                 }
-            };
+            });
+
+            // Sincronizar Ventas
+            onSnapshot(collection(db, "ventas"), (snapshot) => {
+                ventas = [];
+                snapshot.forEach((doc) => {
+                    ventas.push({ id: doc.id, ...doc.data() });
+                });
+            });
         }
 
-        // PERMITIR SCROLL HORIZONTAL CON LA RUEDA DEL MOUSE EN PC
         function configurarScrollCategorias() {
             const cont = document.getElementById('contenedor-categorias');
             if (!cont) return;
@@ -244,7 +255,7 @@
             });
         }
 
-        function desplazarCategorias(distancia) {
+        window.desplazarCategorias = function(distancia) {
             const cont = document.getElementById('contenedor-categorias');
             if (cont) cont.scrollBy({ left: distancia, behavior: 'smooth' });
         }
@@ -257,7 +268,7 @@
             categorias.forEach(cat => {
                 const activa = cat === categoriaSeleccionada;
                 cont.innerHTML += `
-                    <button onclick="seleccionarCategoria('${cat}')" 
+                    <button onclick="window.seleccionarCategoria('${cat}')" 
                         class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300 hover:bg-indigo-800'}">
                         ${cat}
                     </button>
@@ -265,7 +276,7 @@
             });
         }
 
-        function seleccionarCategoria(cat) {
+        window.seleccionarCategoria = function(cat) {
             categoriaSeleccionada = cat;
             renderizarCategorias();
             renderizarCatalogo();
@@ -292,7 +303,7 @@
             productosFiltrados.forEach(prod => {
                 const esCombo = Boolean(prod.componentesStr && prod.componentesStr.trim() !== '');
                 grilla.innerHTML += `
-                    <button onclick="agregarAlCarrito(${prod.id})" 
+                    <button onclick="window.agregarAlCarrito('${prod.id}')" 
                         class="bg-white border ${esCombo ? 'border-amber-400 bg-amber-50/30' : 'border-slate-200'} p-2.5 rounded-xl shadow-sm hover:border-indigo-500 active:bg-indigo-50 flex flex-col text-left transition relative">
                         <span class="absolute top-2 right-2 text-[10px] font-bold ${esCombo ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'} px-1.5 py-0.5 rounded">#${prod.codigo}</span>
                         <span class="font-bold text-slate-800 text-xs pr-8 leading-snug">${prod.nombre}</span>
@@ -305,17 +316,17 @@
             });
         }
 
-        function filtrarCatalogo() {
+        window.filtrarCatalogo = function() {
             renderizarCatalogo();
         }
 
-        function limpiarBuscador() {
+        window.limpiarBuscador = function() {
             document.getElementById('input-buscador').value = '';
             renderizarCatalogo();
             document.getElementById('input-buscador').focus();
         }
 
-        function cambiarVendedor(nombre) {
+        window.cambiarVendedor = function(nombre) {
             vendedorActual = nombre;
             document.getElementById('vendedor-label').innerText = `Vendedor: ${vendedorActual}`;
         }
@@ -324,20 +335,16 @@
             if (!componentesStr || !componentesStr.trim()) return [];
             let partes = componentesStr.split(',');
             let resultado = [];
-            
             partes.forEach(p => {
                 let [cod, cantStr] = p.split(':');
                 if (cod) {
-                    resultado.push({
-                        codigo: cod.trim(),
-                        cant: parseInt(cantStr) || 1
-                    });
+                    resultado.push({ codigo: cod.trim(), cant: parseInt(cantStr) || 1 });
                 }
             });
             return resultado;
         }
 
-        function agregarAlCarrito(id) {
+        window.agregarAlCarrito = function(id) {
             const producto = catalogo.find(p => p.id === id);
             if (!producto) return;
 
@@ -367,14 +374,14 @@
             renderizarCarrito();
         }
 
-        function agregarMontoLibre() {
+        window.agregarMontoLibre = function() {
             let montoStr = prompt("Ingrese el monto a cobrar ($):", "");
             if (!montoStr) return;
             let monto = parseFloat(montoStr);
             if (isNaN(monto) || monto <= 0) return;
 
             carrito.push({
-                id: Date.now(),
+                id: 'varios_' + Date.now(),
                 codigo: "VARIOS",
                 nombre: "Producto Varios",
                 precio: monto,
@@ -385,7 +392,7 @@
             renderizarCarrito();
         }
 
-        function modificarCantidad(id, cambio) {
+        window.modificarCantidad = function(id, cambio) {
             const item = carrito.find(i => i.id === id);
             if (!item) return;
 
@@ -422,9 +429,9 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <div class="flex items-center bg-slate-200 rounded-lg font-bold">
-                                <button onclick="modificarCantidad(${item.id}, -1)" class="px-2 py-0.5 text-slate-600 hover:text-black">-</button>
+                                <button onclick="window.modificarCantidad('${item.id}', -1)" class="px-2 py-0.5 text-slate-600 hover:text-black">-</button>
                                 <span class="px-1 text-slate-800">${item.cantidad}</span>
-                                <button onclick="modificarCantidad(${item.id}, 1)" class="px-2 py-0.5 text-slate-600 hover:text-black">+</button>
+                                <button onclick="window.modificarCantidad('${item.id}', 1)" class="px-2 py-0.5 text-slate-600 hover:text-black">+</button>
                             </div>
                             <span class="font-black text-slate-900 w-14 text-right">$${subtotal.toLocaleString()}</span>
                         </div>
@@ -435,48 +442,58 @@
             totalElemento.innerText = `$${total.toLocaleString()}`;
         }
 
-        function vaciarCarrito() {
+        window.vaciarCarrito = function() {
             carrito = [];
             renderizarCarrito();
         }
 
-        function procesarVenta() {
+        // PROCESAR VENTA Y ACTUALIZAR EN FIRESTORE EN TIEMPO REAL
+        window.procesarVenta = async function() {
             if (carrito.length === 0) return;
 
             let totalVenta = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
-            carrito.forEach(itemCarrito => {
+            // Descontar stock localmente y preparar actualización en Firebase
+            for (let itemCarrito of carrito) {
                 const esCombo = Boolean(itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '');
 
                 if (esCombo) {
                     let componentes = obtenerComponentesParseados(itemCarrito.componentesStr);
-                    componentes.forEach(comp => {
+                    for (let comp of componentes) {
                         let prodIndividual = catalogo.find(p => p.codigo.toLowerCase() === comp.codigo.toLowerCase());
                         if (prodIndividual) {
                             prodIndividual.stock -= (comp.cant * itemCarrito.cantidad);
+                            // Actualizar stock individual en Firestore
+                            await setDoc(doc(db, "catalogo", prodIndividual.id), prodIndividual);
                         }
-                    });
+                    }
                 } else if (!itemCarrito.esMontoLibre) {
                     let prod = catalogo.find(p => p.id === itemCarrito.id);
-                    if (prod) prod.stock -= itemCarrito.cantidad;
+                    if (prod) {
+                        prod.stock -= itemCarrito.cantidad;
+                        // Actualizar stock en Firestore
+                        await setDoc(doc(db, "catalogo", prod.id), prod);
+                    }
                 }
-            });
+            }
 
-            ventas.push({
-                id: Date.now(),
+            // Guardar la venta en Firestore
+            let nuevaVenta = {
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 vendedor: vendedorActual,
                 total: totalVenta,
-                itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0)
-            });
+                itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
+                timestamp: Date.now()
+            };
 
-            guardarEstado();
+            await setDoc(doc(db, "ventas", String(Date.now())), nuevaVenta);
+
             vaciarCarrito();
             renderizarCatalogo();
             limpiarBuscador();
         }
 
-        function abrirRendicion() {
+        window.abrirRendicion = function() {
             document.getElementById('modal-rendicion').classList.remove('hidden');
             let totalGeneral = ventas.reduce((acc, v) => acc + v.total, 0);
             document.getElementById('rendicion-total-general').innerText = `$${totalGeneral.toLocaleString()}`;
@@ -505,7 +522,7 @@
             if (ventas.length === 0) {
                 contHistorial.innerHTML = `<span class="p-3 text-center block text-slate-400">Sin ventas aún</span>`;
             } else {
-                [...ventas].reverse().forEach(v => {
+                [...ventas].sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
                     contHistorial.innerHTML += `
                         <div class="p-2 flex justify-between items-center">
                             <div>
@@ -519,27 +536,29 @@
             }
         }
 
-        function cerrarRendicion() {
+        window.cerrarRendicion = function() {
             document.getElementById('modal-rendicion').classList.add('hidden');
         }
 
-        function reiniciarCajaTurno() {
-            if (confirm("¿Está seguro de reiniciar la caja del día? Se borrará el historial.")) {
-                ventas = [];
-                guardarEstado();
+        window.reiniciarCajaTurno = async function() {
+            if (confirm("¿Está seguro de reiniciar la caja? Se borrarán las ventas registradas.")) {
+                for (let v of ventas) {
+                    await deleteDoc(doc(db, "ventas", v.id));
+                }
                 abrirRendicion();
             }
         }
 
-        function abrirModalInventario() {
+        window.abrirModalInventario = function() {
             document.getElementById('modal-inventario').classList.remove('hidden');
         }
 
-        function cerrarModalInventario() {
+        window.cerrarModalInventario = function() {
             document.getElementById('modal-inventario').classList.add('hidden');
         }
 
-        function importarDesdeTextoExcel() {
+        // IMPORTAR Y SUBIR A FIRESTORE DIRECTO DESDE EXCEL
+        window.importarDesdeTextoExcel = async function() {
             const texto = document.getElementById('textarea-excel').value.trim();
             if (!texto) {
                 alert("Por favor, pega la información copiada desde Excel.");
@@ -547,53 +566,45 @@
             }
 
             const lineas = texto.split('\n');
-            let nuevoCatalogo = [];
+            let contador = 0;
 
-            lineas.forEach((linea, index) => {
-                if (!linea.trim()) return;
+            for (let [index, linea] of lineas.entries()) {
+                if (!linea.trim()) continue;
                 const cols = linea.split('\t');
                 
-                if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
+                if (index === 0 && cols[0].toLowerCase().includes('codigo')) continue;
 
                 if (cols.length >= 5) {
-                    let codigo = cols[0].trim();
-                    let nombre = cols[1].trim();
-                    let categoria = cols[2].trim();
-                    let precio = parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0;
-                    let stock = parseInt(cols[4].trim()) || 0;
-                    let componentesStr = cols[5] ? cols[5].trim() : '';
+                    let idGenerado = 'prod_' + (Date.now() + index);
+                    let productoData = {
+                        codigo: cols[0].trim(),
+                        nombre: cols[1].trim(),
+                        categoria: cols[2].trim(),
+                        precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
+                        stock: parseInt(cols[4].trim()) || 0,
+                        componentesStr: cols[5] ? cols[5].trim() : ''
+                    };
 
-                    nuevoCatalogo.push({
-                        id: Date.now() + index,
-                        codigo: codigo,
-                        nombre: nombre,
-                        categoria: categoria,
-                        precio: precio,
-                        stock: stock,
-                        componentesStr: componentesStr
-                    });
+                    // Guardar directamente en Firestore
+                    await setDoc(doc(db, "catalogo", idGenerado), productoData);
+                    contador++;
                 }
-            });
+            }
 
-            if (nuevoCatalogo.length > 0) {
-                catalogo = nuevoCatalogo;
-                guardarEstado();
-                renderizarCategorias();
-                renderizarCatalogo();
-                alert(`¡Excelente! Se cargaron ${nuevoCatalogo.length} ítems entre productos y combos.`);
+            if (contador > 0) {
+                alert(`¡Éxito! Se subieron ${contador} ítems a la base de datos en la nube.`);
                 document.getElementById('textarea-excel').value = '';
                 cerrarModalInventario();
             } else {
-                alert("No se pudieron leer las columnas de Excel.");
+                alert("No se pudieron procesar las columnas.");
             }
         }
 
-        function cargarCatalogoPredeterminado() {
-            catalogo = [...CATALOGO_INICIAL];
-            guardarEstado();
-            renderizarCategorias();
-            renderizarCatalogo();
-            alert("Catálogo restablecido.");
+        window.cargarCatalogoPredeterminado = async function() {
+            for (let prod of CATALOGO_INICIAL) {
+                await setDoc(doc(db, "catalogo", prod.id), prod);
+            }
+            alert("Catálogo predeterminado cargado en la nube.");
             cerrarModalInventario();
         }
     </script>
