@@ -72,7 +72,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2" id="grilla-productos">
-                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Conectando con la base de datos...</span>
+                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando catálogo desde la nube...</span>
             </div>
 
             <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition active:scale-98">
@@ -157,8 +157,8 @@
                         <p class="text-slate-600 text-[11px]">Copia tus celdas en Excel (6 columnas: Código, Nombre, Categoría, Precio, Stock, Componentes) y pégalas aquí:</p>
                         <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V..." 
                             class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
-                        <button onclick="importarDesdeTextoExcel()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
-                            🚀 Sube a la Nube (Firebase)
+                        <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
+                            🚀 Subir Rápido a la Nube
                         </button>
                     </div>
 
@@ -174,10 +174,10 @@
 
     </div>
 
-    <!-- FIREBASE & LÓGICA JAVASCRIPT -->
+    <!-- FIREBASE & LÓGICA JAVASCRIPT OPTIMIZADA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyATqzcROVxXUn8uZxhgQMtiF9JoOFXyZvk",
@@ -199,7 +199,7 @@
 
         window.onload = async function() {
             configurarScrollCategorias();
-            await sincronizarConFirebase();
+            sincronizarConFirebase();
 
             document.getElementById('input-buscador').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
@@ -213,7 +213,7 @@
             });
         };
 
-        async function sincronizarConFirebase() {
+        function sincronizarConFirebase() {
             onSnapshot(collection(db, "catalogo"), (snapshot) => {
                 catalogo = [];
                 snapshot.forEach((doc) => {
@@ -436,6 +436,7 @@
             if (carrito.length === 0) return;
 
             let totalVenta = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            const batch = writeBatch(db);
 
             for (let itemCarrito of carrito) {
                 const esCombo = Boolean(itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '');
@@ -446,27 +447,30 @@
                         let prodIndividual = catalogo.find(p => p.codigo.toLowerCase() === comp.codigo.toLowerCase());
                         if (prodIndividual) {
                             prodIndividual.stock -= (comp.cant * itemCarrito.cantidad);
-                            await setDoc(doc(db, "catalogo", prodIndividual.id), prodIndividual);
+                            let ref = doc(db, "catalogo", prodIndividual.id);
+                            batch.set(ref, prodIndividual);
                         }
                     }
                 } else if (!itemCarrito.esMontoLibre) {
                     let prod = catalogo.find(p => p.id === itemCarrito.id);
                     if (prod) {
                         prod.stock -= itemCarrito.cantidad;
-                        await setDoc(doc(db, "catalogo", prod.id), prod);
+                        let ref = doc(db, "catalogo", prod.id);
+                        batch.set(ref, prod);
                     }
                 }
             }
 
-            let nuevaVenta = {
+            let nuevaVentaRef = doc(collection(db, "ventas"));
+            batch.set(nuevaVentaRef, {
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 vendedor: vendedorActual,
                 total: totalVenta,
                 itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
                 timestamp: Date.now()
-            };
+            });
 
-            await setDoc(doc(db, "ventas", String(Date.now())), nuevaVenta);
+            await batch.commit();
 
             vaciarCarrito();
             renderizarCatalogo();
@@ -522,9 +526,11 @@
 
         window.reiniciarCajaTurno = async function() {
             if (confirm("¿Está seguro de reiniciar la caja? Se borrarán las ventas registradas.")) {
-                for (let v of ventas) {
-                    await deleteDoc(doc(db, "ventas", v.id));
-                }
+                const batch = writeBatch(db);
+                ventas.forEach(v => {
+                    batch.delete(doc(db, "ventas", v.id));
+                });
+                await batch.commit();
                 abrirRendicion();
             }
         }
@@ -537,6 +543,7 @@
             document.getElementById('modal-inventario').classList.add('hidden');
         }
 
+        // CARGA MASIVA ULTRA RÁPIDA CON BATCH DE FIRESTORE
         window.importarDesdeTextoExcel = async function() {
             const texto = document.getElementById('textarea-excel').value.trim();
             if (!texto) {
@@ -544,14 +551,19 @@
                 return;
             }
 
+            const btn = document.getElementById('btn-importar');
+            btn.innerText = "⏳ Subiendo catálogo...";
+            btn.disabled = true;
+
             const lineas = texto.split('\n');
+            const batch = writeBatch(db);
             let contador = 0;
 
-            for (let [index, linea] of lineas.entries()) {
-                if (!linea.trim()) continue;
+            lineas.forEach((linea, index) => {
+                if (!linea.trim()) return;
                 const cols = linea.split('\t');
                 
-                if (index === 0 && cols[0].toLowerCase().includes('codigo')) continue;
+                if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
 
                 if (cols.length >= 5) {
                     let idGenerado = 'prod_' + (Date.now() + index);
@@ -564,17 +576,23 @@
                         componentesStr: cols[5] ? cols[5].trim() : ''
                     };
 
-                    await setDoc(doc(db, "catalogo", idGenerado), productoData);
+                    let ref = doc(db, "catalogo", idGenerado);
+                    batch.set(ref, productoData);
                     contador++;
                 }
-            }
+            });
 
-            if (contador > 0) {
-                alert(`¡Éxito! Se subieron ${contador} ítems a la base de datos en la nube.`);
+            try {
+                await batch.commit();
+                alert(`¡Éxito absoluto! Se cargaron ${contador} ítems a la nube al instante.`);
                 document.getElementById('textarea-excel').value = '';
                 cerrarModalInventario();
-            } else {
-                alert("No se pudieron procesar las columnas.");
+            } catch (error) {
+                console.error("Error al importar:", error);
+                alert("Ocurrió un error al subir el inventario. Revisa la consola.");
+            } finally {
+                btn.innerText = "🚀 Subir Rápido a la Nube";
+                btn.disabled = false;
             }
         }
 
@@ -587,9 +605,11 @@
                 { id: "5", codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" }
             ];
 
-            for (let prod of CATALOGO_INICIAL) {
-                await setDoc(doc(db, "catalogo", prod.id), prod);
-            }
+            const batch = writeBatch(db);
+            CATALOGO_INICIAL.forEach(prod => {
+                batch.set(doc(db, "catalogo", prod.id), prod);
+            });
+            await batch.commit();
             alert("Catálogo predeterminado cargado en la nube.");
             cerrarModalInventario();
         }
