@@ -109,25 +109,42 @@
             </div>
         </section>
 
-        <!-- MODAL DE COBRO (AGENCIA, GUÍA Y PASAJEROS) -->
+        <!-- MODAL DE COBRO INTELIGENTE -->
         <div id="modal-cobro" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
+            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
                     <h3 class="font-bold text-sm flex items-center gap-2">📝 Detalle de Venta y Visita</h3>
                     <button onclick="cerrarModalCobro()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
                 </div>
                 
-                <div class="p-4 flex flex-col gap-3 text-xs">
+                <div class="p-4 overflow-y-auto flex flex-col gap-3 text-xs">
+                    <!-- FECHA Y HORA -->
+                    <div class="grid grid-cols-2 gap-2 bg-indigo-50 p-2.5 rounded-xl border border-indigo-100">
+                        <div>
+                            <span class="text-[10px] text-indigo-600 font-bold block">Fecha:</span>
+                            <span class="font-bold text-slate-800 text-xs" id="label-fecha-venta">--/--/----</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-indigo-600 font-bold block">Hora:</span>
+                            <span class="font-bold text-slate-800 text-xs" id="label-hora-venta">--:--</span>
+                        </div>
+                    </div>
+
+                    <!-- AGENCIA CON LISTA DESPLEGABLE COMPLETA -->
                     <div>
                         <label class="font-bold text-slate-700 block mb-1">Agencia:</label>
-                        <input type="text" id="input-agencia" placeholder="Ej. Agencia Turística Sur" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <input list="lista-agencias" id="input-agencia" placeholder="Selecciona o escribe agencia..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <datalist id="lista-agencias"></datalist>
                     </div>
 
+                    <!-- GUÍA CON LISTA DESPLEGABLE COMPLETA -->
                     <div>
                         <label class="font-bold text-slate-700 block mb-1">Nombre del Guía:</label>
-                        <input type="text" id="input-guia" placeholder="Ej. Carlos Gómez" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <input list="lista-guias" id="input-guia" placeholder="Selecciona o escribe guía..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <datalist id="lista-guias"></datalist>
                     </div>
 
+                    <!-- CANTIDAD Y PRECIO UNITARIO EN 0 -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="font-bold text-slate-700 block mb-1">Cant. Personas:</label>
@@ -177,7 +194,7 @@
                     </div>
 
                     <div>
-                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones con Agencias</h4>
+                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones</h4>
                         <div class="max-h-40 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
                     </div>
                 </div>
@@ -246,6 +263,31 @@
         let catalogo = [];
         let carrito = [];
         let ventas = [];
+
+        // AGENCIAS PRECARGADAS DESDE TU LISTA
+        let agenciasList = new Set([
+            "Sin Agencia", "Cepas", "Wanka", "Manso", "Grupo Sur", "Wine and Ride", 
+            "salvando distancias", "gora", "mancagua", "johana", "mayas", "cata", 
+            "PRIVADA", "cristo", "micro jujuy", "huentata", "rolsol", "saint germain", 
+            "viajes y diseños", "colectivo chaco Sukan", "sars", "punto de partida", 
+            "monmar", "amalaya", "rac", "kawak", "geovix", "mahuel", "lili colectivo", 
+            "whipala", "aymará", "wine transfer", "micro entre rios", "daymar", 
+            "micro cordoba", "micro ayh", "micro r v", "cuyo travel", "fase 2", 
+            "modo tours", "pasaporte", "campo base"
+        ]);
+
+        // GUÍAS PRECARGADOS DESDE TU LISTA
+        let guiasList = new Set([
+            "Sin Guía", "gastón", "Antonella", "Marita", "Priscilla", "Caro", "Mónica", 
+            "Sole", "Ramiro", "Valeria", "Yesica", "Noelia", "Ana", "Pamela", "Fernando", 
+            "Cintia", "Hernán", "Johanna", "Ornella", "Sebastián", "Lore", "Mario", 
+            "Sabrina", "romi", "cami", "alejandro", "analia", "juan", "silvio", 
+            "victoria", "aldo", "rubén", "mariano", "alejo", "aldana", "silvina", 
+            "emilia", "pablo", "germán", "rocío", "facundo", "dolores", "daniel", 
+            "juanpi", "federico", "ricardo", "juan pablo", "claudia", "fabri", 
+            "belén", "mercedes", "franco", "tony"
+        ]);
+
         let vendedorActual = "Vendedor 1";
         let categoriaSeleccionada = "TODAS";
 
@@ -278,8 +320,26 @@
             onSnapshot(collection(db, "ventas"), (snapshot) => {
                 ventas = [];
                 snapshot.forEach((doc) => {
-                    ventas.push({ id: doc.id, ...doc.data() });
+                    let vData = doc.data();
+                    ventas.push({ id: doc.id, ...vData });
+                    if (vData.agencia) agenciasList.add(vData.agencia);
+                    if (vData.guia) guiasList.add(vData.guia);
                 });
+                actualizarListasDesplegables();
+            });
+        }
+
+        function actualizarListasDesplegables() {
+            const listAgencias = document.getElementById('lista-agencias');
+            listAgencias.innerHTML = '';
+            Array.from(agenciasList).sort().forEach(ag => {
+                listAgencias.innerHTML += `<option value="${ag}">`;
+            });
+
+            const listGuias = document.getElementById('lista-guias');
+            listGuias.innerHTML = '';
+            Array.from(guiasList).sort().forEach(g => {
+                listGuias.innerHTML += `<option value="${g}">`;
             });
         }
 
@@ -484,18 +544,23 @@
             renderizarCarrito();
         }
 
-        // FLUJO DE COBRO CON AGENCIA Y GUÍA
         window.abrirModalCobro = function() {
             if (carrito.length === 0) {
                 alert("El carrito está vacío.");
                 return;
             }
-            // Sugerir el total del carrito como precio unitario o base
-            let totalCarrito = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+
+            let ahora = new Date();
+            let fechaStr = ahora.toLocaleDateString();
+            let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            document.getElementById('label-fecha-venta').innerText = fechaStr;
+            document.getElementById('label-hora-venta').innerText = horaStr;
             document.getElementById('input-cant-personas').value = 1;
-            document.getElementById('input-precio-unitario').value = totalCarrito;
-            document.getElementById('modal-total-calculado').innerText = `$${totalCarrito.toLocaleString()}`;
-            
+            document.getElementById('input-precio-unitario').value = 0;
+            document.getElementById('modal-total-calculado').innerText = '$0';
+
+            actualizarListasDesplegables();
             document.getElementById('modal-cobro').classList.remove('hidden');
         }
 
@@ -511,15 +576,17 @@
         }
 
         window.confirmarYProcesarVenta = async function() {
-            let agencia = document.getElementById('input-agencia').value.trim() || "Particular / Sin Agencia";
+            let agencia = document.getElementById('input-agencia').value.trim() || "Sin Agencia";
             let guia = document.getElementById('input-guia').value.trim() || "Sin Guía";
             let cantPersonas = parseInt(document.getElementById('input-cant-personas').value) || 1;
             let precioUnitario = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
             let totalVisita = cantPersonas * precioUnitario;
 
+            let totalCarritoProductos = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            let totalVentaFinal = totalVisita > 0 ? totalVisita : totalCarritoProductos;
+
             const batch = writeBatch(db);
 
-            // Descontar stock de productos/combos en el carrito
             for (let itemCarrito of carrito) {
                 const esCombo = Boolean((itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') || itemCarrito.categoria.toLowerCase() === 'combos' || itemCarrito.nombre.toLowerCase().includes('combo'));
 
@@ -543,16 +610,20 @@
                 }
             }
 
-            // Guardar la venta con todos los datos de agencia y guía
+            let ahora = new Date();
+            let fechaStr = ahora.toLocaleDateString();
+            let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
             let nuevaVentaRef = doc(collection(db, "ventas"));
             batch.set(nuevaVentaRef, {
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                fecha: fechaStr,
+                hora: horaStr,
                 vendedor: vendedorActual,
                 agencia: agencia,
                 guia: guia,
                 cantPersonas: cantPersonas,
                 precioUnitario: precioUnitario,
-                total: totalVisita > 0 ? totalVisita : carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0),
+                total: totalVentaFinal,
                 itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
                 timestamp: Date.now()
             });
@@ -603,8 +674,8 @@
                                 <span class="font-black text-emerald-600">$${v.total.toLocaleString()}</span>
                             </div>
                             <div class="flex justify-between text-[10px] text-slate-500">
-                                <span>Guía: <b>${v.guia}</b> (${v.cantPersonas} pax)</span>
-                                <span>${v.hora} • ${v.vendedor}</span>
+                                <span>Guía: <b>${v.guia}</b> (${v.cantPersonas} pax • $${v.precioUnitario || 0} c/u)</span>
+                                <span>${v.fecha || ''} ${v.hora} • ${v.vendedor}</span>
                             </div>
                         </div>
                     `;
