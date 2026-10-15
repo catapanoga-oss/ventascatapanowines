@@ -72,7 +72,7 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2" id="grilla-productos">
-                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando catálogo desde la nube...</span>
+                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando catálogo...</span>
             </div>
 
             <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition active:scale-98">
@@ -158,7 +158,7 @@
                         <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V..." 
                             class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
                         <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
-                            🚀 Subir Rápido a la Nube
+                            🚀 Importar por Bloques (Anti-Trabas)
                         </button>
                     </div>
 
@@ -174,10 +174,10 @@
 
     </div>
 
-    <!-- FIREBASE & LÓGICA JAVASCRIPT OPTIMIZADA -->
+    <!-- FIREBASE & LÓGICA JAVASCRIPT SEGURA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyATqzcROVxXUn8uZxhgQMtiF9JoOFXyZvk",
@@ -543,21 +543,20 @@
             document.getElementById('modal-inventario').classList.add('hidden');
         }
 
-        // CARGA MASIVA ULTRA RÁPIDA CON BATCH DE FIRESTORE
+        // IMPORTACIÓN POR BLOQUES ASÍNCRONOS (ANTI-TRABAS)
         window.importarDesdeTextoExcel = async function() {
-            const texto = document.getElementById('textarea-excel').value.trim();
-            if (!texto) {
+            const texto = document.getElementById('textarea-excel').value;
+            if (!texto || !texto.trim()) {
                 alert("Por favor, pega la información copiada desde Excel.");
                 return;
             }
 
             const btn = document.getElementById('btn-importar');
-            btn.innerText = "⏳ Subiendo catálogo...";
+            btn.innerText = "⏳ Procesando...";
             btn.disabled = true;
 
             const lineas = texto.split('\n');
-            const batch = writeBatch(db);
-            let contador = 0;
+            let productosValidos = [];
 
             lineas.forEach((linea, index) => {
                 if (!linea.trim()) return;
@@ -566,32 +565,49 @@
                 if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
 
                 if (cols.length >= 5) {
-                    let idGenerado = 'prod_' + (Date.now() + index);
-                    let productoData = {
+                    productosValidos.push({
                         codigo: cols[0].trim(),
                         nombre: cols[1].trim(),
                         categoria: cols[2].trim(),
                         precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
                         stock: parseInt(cols[4].trim()) || 0,
                         componentesStr: cols[5] ? cols[5].trim() : ''
-                    };
-
-                    let ref = doc(db, "catalogo", idGenerado);
-                    batch.set(ref, productoData);
-                    contador++;
+                    });
                 }
             });
 
+            if (productosValidos.length === 0) {
+                alert("No se encontraron productos válidos para importar.");
+                btn.innerText = "🚀 Importar por Bloques (Anti-Trabas)";
+                btn.disabled = false;
+                return;
+            }
+
             try {
-                await batch.commit();
-                alert(`¡Éxito absoluto! Se cargaron ${contador} ítems a la nube al instante.`);
+                // Subir en bloques de 20 para no saturar nunca el navegador ni Firebase
+                const tamanoBloque = 20;
+                for (let i = 0; i < productosValidos.length; i += tamanoBloque) {
+                    let bloque = productosValidos.slice(i, i + tamanoBloque);
+                    const batch = writeBatch(db);
+
+                    bloque.forEach((prod, idx) => {
+                        let idGenerado = 'prod_' + (Date.now() + i + idx);
+                        let ref = doc(db, "catalogo", idGenerado);
+                        batch.set(ref, prod);
+                    });
+
+                    await batch.commit();
+                    btn.innerText = `⏳ Subidos ${Math.min(i + tamanoBloque, productosValidos.length)} de ${productosValidos.length}...`;
+                }
+
+                alert(`¡Éxito absoluto! Se cargaron ${productosValidos.length} ítems correctamente sin trabas.`);
                 document.getElementById('textarea-excel').value = '';
                 cerrarModalInventario();
             } catch (error) {
                 console.error("Error al importar:", error);
                 alert("Ocurrió un error al subir el inventario. Revisa la consola.");
             } finally {
-                btn.innerText = "🚀 Subir Rápido a la Nube";
+                btn.innerText = "🚀 Importar por Bloques (Anti-Trabas)";
                 btn.disabled = false;
             }
         }
