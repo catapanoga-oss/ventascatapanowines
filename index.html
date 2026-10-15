@@ -51,7 +51,16 @@
                 </button>
             </div>
 
-            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium" id="contenedor-categorias"></div>
+            <!-- CONTENEDOR DE CATEGORÍAS CON NAVEGACIÓN PC Y MÓVIL -->
+            <div class="relative flex items-center">
+                <button onclick="desplazarCategorias(-100)" class="hidden sm:flex bg-indigo-950 hover:bg-indigo-800 text-indigo-200 text-xs font-bold px-1.5 py-1 rounded-l-lg z-10 items-center justify-center">
+                    ‹
+                </button>
+                <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium w-full scroll-smooth" id="contenedor-categorias"></div>
+                <button onclick="desplazarCategorias(100)" class="hidden sm:flex bg-indigo-950 hover:bg-indigo-800 text-indigo-200 text-xs font-bold px-1.5 py-1 rounded-r-lg z-10 items-center justify-center">
+                    ›
+                </button>
+            </div>
         </section>
 
         <!-- CONTENIDO PRINCIPAL: GRILLA DE PRODUCTOS -->
@@ -132,7 +141,7 @@
             </div>
         </div>
 
-        <!-- MODAL DE INVENTARIO CON PEGAR EXCEL -->
+        <!-- MODAL DE INVENTARIO -->
         <div id="modal-inventario" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
@@ -188,6 +197,7 @@
             renderizarCategorias();
             renderizarCatalogo();
             renderizarCarrito();
+            configurarScrollCategorias();
 
             document.getElementById('input-buscador').addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
@@ -222,6 +232,21 @@
                     renderizarCatalogo();
                 }
             };
+        }
+
+        // PERMITIR SCROLL HORIZONTAL CON LA RUEDA DEL MOUSE EN PC
+        function configurarScrollCategorias() {
+            const cont = document.getElementById('contenedor-categorias');
+            if (!cont) return;
+            cont.addEventListener('wheel', (evt) => {
+                evt.preventDefault();
+                cont.scrollLeft += evt.deltaY;
+            });
+        }
+
+        function desplazarCategorias(distancia) {
+            const cont = document.getElementById('contenedor-categorias');
+            if (cont) cont.scrollBy({ left: distancia, behavior: 'smooth' });
         }
 
         function renderizarCategorias() {
@@ -295,7 +320,6 @@
             document.getElementById('vendedor-label').innerText = `Vendedor: ${vendedorActual}`;
         }
 
-        // PARSER DE COMPONENTES DE COMBO (ej: "101:1, 103:2")
         function obtenerComponentesParseados(componentesStr) {
             if (!componentesStr || !componentesStr.trim()) return [];
             let partes = componentesStr.split(',');
@@ -416,7 +440,6 @@
             renderizarCarrito();
         }
 
-        // DESCUENTO DE STOCK INTELIGENTE EN COMBOS
         function procesarVenta() {
             if (carrito.length === 0) return;
 
@@ -516,7 +539,6 @@
             document.getElementById('modal-inventario').classList.add('hidden');
         }
 
-        // MOTOR DE PARSEO DE TABLA EXCEL (6 COLUMNAS)
         function importarDesdeTextoExcel() {
             const texto = document.getElementById('textarea-excel').value.trim();
             if (!texto) {
@@ -531,7 +553,6 @@
                 if (!linea.trim()) return;
                 const cols = linea.split('\t');
                 
-                // Omitir encabezado si contiene "Codigo"
                 if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
 
                 if (cols.length >= 5) {
@@ -563,7 +584,7 @@
                 document.getElementById('textarea-excel').value = '';
                 cerrarModalInventario();
             } else {
-                alert("No se pudieron leer las columnas de Excel. Asegúrate de copiar las celdas directamente.");
+                alert("No se pudieron leer las columnas de Excel.");
             }
         }
 
