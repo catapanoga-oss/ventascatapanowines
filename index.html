@@ -158,14 +158,16 @@
                         <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V..." 
                             class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
                         <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
-                            🚀 Importar por Bloques (Anti-Trabas)
+                            🚀 Importar por Bloques
                         </button>
                     </div>
 
-                    <div class="border-t pt-3 flex justify-between items-center">
-                        <span class="text-slate-500">¿Restablecer valores iniciales?</span>
-                        <button onclick="cargarCatalogoPredeterminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-[11px]">
-                            Restablecer
+                    <div class="border-t pt-3 flex flex-col gap-2">
+                        <button onclick="borrarTodaLaBaseDeDatos()" class="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow">
+                            🗑️ Borrar toda la Base de Datos (Limpiar)
+                        </button>
+                        <button onclick="cargarCatalogoPredeterminado()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs">
+                            Cargar Predeterminados
                         </button>
                     </div>
                 </div>
@@ -174,10 +176,10 @@
 
     </div>
 
-    <!-- FIREBASE & LÓGICA JAVASCRIPT SEGURA -->
+    <!-- FIREBASE & LÓGICA JAVASCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyATqzcROVxXUn8uZxhgQMtiF9JoOFXyZvk",
@@ -281,7 +283,7 @@
             document.getElementById('badge-contador').innerText = `${productosFiltrados.length} items`;
 
             if (productosFiltrados.length === 0) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">No hay productos en esta categoría</span>`;
+                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Catálogo vacío - Sube tu inventario</span>`;
                 return;
             }
 
@@ -525,11 +527,10 @@
         }
 
         window.reiniciarCajaTurno = async function() {
-            if (confirm("¿Está seguro de reiniciar la caja? Se borrarán las ventas registradas.")) {
+            if (confirm("¿Está seguro de reiniciar la caja?")) {
+                const querySnapshot = await getDocs(collection(db, "ventas"));
                 const batch = writeBatch(db);
-                ventas.forEach(v => {
-                    batch.delete(doc(db, "ventas", v.id));
-                });
+                querySnapshot.forEach((d) => batch.delete(d.ref));
                 await batch.commit();
                 abrirRendicion();
             }
@@ -543,7 +544,26 @@
             document.getElementById('modal-inventario').classList.add('hidden');
         }
 
-        // IMPORTACIÓN POR BLOQUES ASÍNCRONOS (ANTI-TRABAS)
+        // BORRAR ABSOLUTAMENTE TODO EL CATÁLOGO EN LA NUBE
+        window.borrarTodaLaBaseDeDatos = async function() {
+            if (confirm("⚠️ ¿Estás 100% seguro de borrar TODO el catálogo de la base de datos?")) {
+                try {
+                    const querySnapshot = await getDocs(collection(db, "catalogo"));
+                    const batch = writeBatch(db);
+                    querySnapshot.forEach((d) => {
+                        batch.delete(d.ref);
+                    });
+                    await batch.commit();
+                    alert("¡Base de datos limpiada con éxito! Ya puedes pegar tu nuevo inventario.");
+                    cerrarModalInventario();
+                } catch (error) {
+                    console.error("Error al borrar:", error);
+                    alert("Ocurrió un error al intentar borrar.");
+                }
+            }
+        }
+
+        // IMPORTACIÓN POR BLOQUES ASÍNCRONOS
         window.importarDesdeTextoExcel = async function() {
             const texto = document.getElementById('textarea-excel').value;
             if (!texto || !texto.trim()) {
@@ -578,13 +598,12 @@
 
             if (productosValidos.length === 0) {
                 alert("No se encontraron productos válidos para importar.");
-                btn.innerText = "🚀 Importar por Bloques (Anti-Trabas)";
+                btn.innerText = "🚀 Importar por Bloques";
                 btn.disabled = false;
                 return;
             }
 
             try {
-                // Subir en bloques de 20 para no saturar nunca el navegador ni Firebase
                 const tamanoBloque = 20;
                 for (let i = 0; i < productosValidos.length; i += tamanoBloque) {
                     let bloque = productosValidos.slice(i, i + tamanoBloque);
@@ -600,14 +619,14 @@
                     btn.innerText = `⏳ Subidos ${Math.min(i + tamanoBloque, productosValidos.length)} de ${productosValidos.length}...`;
                 }
 
-                alert(`¡Éxito absoluto! Se cargaron ${productosValidos.length} ítems correctamente sin trabas.`);
+                alert(`¡Éxito absoluto! Se cargaron ${productosValidos.length} ítems correctamente.`);
                 document.getElementById('textarea-excel').value = '';
                 cerrarModalInventario();
             } catch (error) {
                 console.error("Error al importar:", error);
-                alert("Ocurrió un error al subir el inventario. Revisa la consola.");
+                alert("Ocurrió un error al subir el inventario.");
             } finally {
-                btn.innerText = "🚀 Importar por Bloques (Anti-Trabas)";
+                btn.innerText = "🚀 Importar por Bloques";
                 btn.disabled = false;
             }
         }
