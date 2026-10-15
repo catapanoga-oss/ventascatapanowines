@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kiosco Religioso - POS Venta Rápida</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .touch-none { touch-action: manipulation; user-select: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-800 font-sans antialiased touch-none min-h-screen flex justify-center">
+
+    <div class="w-full max-w-md bg-slate-100 min-h-screen flex flex-col shadow-2xl relative overflow-hidden">
+        
+        <!-- ENCABEZADO Y PERFIL DE VENDEDOR -->
+        <header class="bg-indigo-950 text-white p-3 flex justify-between items-center shadow-md z-10">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-indigo-100 shadow">
+                    ⛪
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm tracking-wide text-indigo-100 leading-none">Santería Móvil</h1>
+                    <span class="text-[10px] text-indigo-300 font-medium" id="vendedor-label">Vendedor: Vendedor 1</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <!-- Selector de Vendedor -->
+                <select id="select-vendedor" onchange="cambiarVendedor(this.value)" class="bg-indigo-900 text-indigo-100 text-xs px-2 py-1.5 rounded-lg border border-indigo-700 outline-none font-semibold cursor-pointer">
+                    <option value="Vendedor 1">Vendedor 1</option>
+                    <option value="Vendedor 2">Vendedor 2</option>
+                    <option value="Vendedor 3">Vendedor 3</option>
+                </select>
+
+                <!-- Botón Inventario / Ajustes -->
+                <button onclick="abrirModalInventario()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Gestionar Inventario">
+                    📦
+                </button>
+            </div>
+        </header>
+
+        <!-- BUSCADOR RÁPIDO & FILTRO DE CATEGORÍAS -->
+        <section class="bg-indigo-900 p-2.5 shadow-md flex flex-col gap-2 z-10">
+            <!-- Campo de Búsqueda -->
+            <div class="relative">
+                <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Escriba código (101) o nombre..." 
+                    class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm font-medium px-3 py-2 rounded-xl outline-none border-2 border-indigo-700 focus:border-indigo-400 transition pr-8">
+                <button onclick="limpiarBuscador()" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Chips de Categorías -->
+            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium" id="contenedor-categorias">
+                <!-- Se llenan por JS -->
+            </div>
+        </section>
+
+        <!-- CONTENIDO PRINCIPAL: GRILLA DE PRODUCTOS -->
+        <main class="flex-1 p-2.5 overflow-y-auto flex flex-col gap-3 pb-32">
+            
+            <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider" id="titulo-catalogo">Artículos Rápidos</span>
+                <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold" id="badge-contador">0 ítems</span>
+            </div>
+
+            <!-- Grilla de Botones de Productos -->
+            <div class="grid grid-cols-2 gap-2" id="grilla-productos">
+                <!-- Productos dinámicos -->
+            </div>
+
+            <!-- Botón Especial: Ingreso de Monto Libre -->
+            <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition active:scale-98">
+                <span>➕ Agregar Monto Varios (Importe Libre)</span>
+            </button>
+
+        </main>
+
+        <!-- PANEL INFERIOR: CARRITO Y ACCIONES -->
+        <section class="fixed bottom-0 max-w-md w-full bg-white border-t border-slate-200 shadow-2xl z-20 flex flex-col">
+            
+            <!-- Resumen Expandible del Carrito -->
+            <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-1 max-h-32 overflow-y-auto" id="contenedor-items-carrito">
+                <!-- Items del carrito cargados dinámicamente -->
+            </div>
+
+            <!-- Pie de Cobro y Rendición -->
+            <div class="p-3 bg-white flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-slate-500 block">Total a Cobrar:</span>
+                        <span class="text-2xl font-black text-indigo-950 leading-none" id="total-carrito">$0</span>
+                    </div>
+                    <button onclick="vaciarCarrito()" class="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded bg-red-50">
+                        Vaciar
+                    </button>
+                </div>
+
+                <!-- Botón Principal de Cobro -->
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="procesarVenta()" class="col-span-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 text-base">
+                        <span>⚡ COBRAR Y SIGUIENTE</span>
+                    </button>
+                    <button onclick="abrirRendicion()" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex flex-col items-center justify-center text-[10px] leading-tight active:scale-95 transition p-1">
+                        <span class="text-base mb-0.5">📊</span>
+                        <span>Caja</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL DE RENDICIÓN DE CAJA CONSOLIDADA -->
+        <div id="modal-rendicion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Rendición de Caja Unificada</h3>
+                    <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                </div>
+                
+                <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
+                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl text-center">
+                        <span class="text-indigo-600 font-bold block uppercase text-[10px] tracking-wider">Total Recaudado en el Evento</span>
+                        <span class="text-3xl font-extrabold text-indigo-950" id="rendicion-total-general">$0</span>
+                        <span class="block text-[10px] text-indigo-400 mt-1" id="rendicion-total-ops">0 operaciones realizadas</span>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Recaudación por Vendedor</h4>
+                        <div class="flex flex-col gap-1.5" id="desglose-vendedores"></div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones</h4>
+                        <div class="max-h-36 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-slate-50 border-t flex gap-2">
+                    <button onclick="reiniciarCajaTurno()" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-xl text-xs hover:bg-red-200">
+                        Reiniciar Caja del Día
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL DE GESTIÓN DE INVENTARIO (CON PEGAR DIRECTO DESDE EXCEL) -->
+        <div id="modal-inventario" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
+                    <h3 class="font-bold text-sm flex items-center gap-2">📦 Gestión de Inventario</h3>
+                    <button onclick="cerrarModalInventario()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                </div>
+                
+                <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
+                    <!-- Opción 1: Pegar desde Excel -->
+                    <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex flex-col gap-2">
+                        <h4 class="font-bold text-indigo-900 text-sm">✨ Pegar directo desde Excel</h4>
+                        <p class="text-slate-600 text-[11px]">Selecciona tus filas en Excel (desde Código hasta Stock), cópialas (<kbd class="bg-white px-1 border rounded">Ctrl+C</kbd>) y pégalas aquí abajo:</p>
+                        
+                        <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V para pegar la tabla..." 
+                            class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
+                        
+                        <button onclick="importarDesdeTextoExcel()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
+                            🚀 Importar Productos Pegados
+                        </button>
+                    </div>
+
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-slate-200"></div>
+                        <span class="flex-shrink mx-4 text-slate-400 text-[10px] uppercase font-bold">O también</span>
+                        <div class="flex-grow border-t border-slate-200"></div>
+                    </div>
+
+                    <!-- Opción 2: Archivo CSV -->
+                    <div class="flex flex-col gap-2">
+                        <input type="file" id="archivo-csv" accept=".csv" class="hidden" onchange="procesarArchivoCSV(event)">
+                        <button onclick="document.getElementById('archivo-csv').click()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-xl shadow transition text-center flex items-center justify-center gap-2">
+                            <span>📥 Subir archivo CSV</span>
+                        </button>
+                    </div>
+
+                    <div class="border-t pt-3 flex justify-between items-center">
+                        <span class="text-slate-500">¿Deseas volver al inicio?</span>
+                        <button onclick="cargarCatalogoPredeterminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-[11px]">
+                            Restablecer Predeterminados
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        const CATALOGO_INICIAL = [
+            { id: 1, codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150 },
+            { id: 2, codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80 },
+            { id: 3, codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45 },
+            { id: 4, codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200 },
+            { id: 5, codigo: "105", nombre: "Imagen Virgen 15cm", categoria: "Figuras", precio: 6000, stock: 15 },
+            { id: 6, codigo: "106", nombre: "Pulsera San Benito", categoria: "Santería", precio: 1500, stock: 60 },
+            { id: 7, codigo: "107", nombre: "Agua Bendita 100ml", categoria: "Santería", precio: 1000, stock: 40 },
+            { id: 8, codigo: "108", nombre: "Denario Metal", categoria: "Rosarios", precio: 1800, stock: 35 }
+        ];
+
+        let catalogo = [];
+        let carrito = [];
+        let ventas = [];
+        let vendedorActual = "Vendedor 1";
+        let categoriaSeleccionada = "TODAS";
+
+        const canalSync = new BroadcastChannel('pos_kiosco_religioso');
+
+        window.onload = function() {
+            cargarEstadoGuardado();
+            configurarSincronizacion();
+            renderizarCategorias();
+            renderizarCatalogo();
+            renderizarCarrito();
+
+            document.getElementById('input-buscador').addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    let val = this.value.trim().toLowerCase();
+                    let coincidencia = catalogo.find(p => p.codigo.toLowerCase() === val || p.nombre.toLowerCase() === val);
+                    if (coincidencia) {
+                        agregarAlCarrito(coincidencia.id);
+                        limpiarBuscador();
+                    }
+                }
+            });
+        };
+
+        function cargarEstadoGuardado() {
+            const catGuardado = localStorage.getItem('kiosco_catalogo');
+            const ventasGuardadas = localStorage.getItem('kiosco_ventas');
+            
+            catalogo = catGuardado ? JSON.parse(catGuardado) : [...CATALOGO_INICIAL];
+            ventas = ventasGuardadas ? JSON.parse(ventasGuardadas) : [];
+        }
+
+        function guardarEstado() {
+            localStorage.setItem('kiosco_catalogo', JSON.stringify(catalogo));
+            localStorage.setItem('kiosco_ventas', JSON.stringify(ventas));
+            canalSync.postMessage({ tipo: 'ACTUALIZACION_ESTADO', catalogo, ventas });
+        }
+
+        function configurarSincronizacion() {
+            canalSync.onmessage = (event) => {
+                if (event.data.tipo === 'ACTUALIZACION_ESTADO') {
+                    catalogo = event.data.catalogo;
+                    ventas = event.data.ventas;
+                    renderizarCatalogo();
+                }
+            };
+        }
+
+        function renderizarCategorias() {
+            const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
+            const cont = document.getElementById('contenedor-categorias');
+            cont.innerHTML = '';
+
+            categorias.forEach(cat => {
+                const activa = cat === categoriaSeleccionada;
+                cont.innerHTML += `
+                    <button onclick="seleccionarCategoria('${cat}')" 
+                        class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300 hover:bg-indigo-800'}">
+                        ${cat}
+                    </button>
+                `;
+            });
+        }
+
+        function seleccionarCategoria(cat) {
+            categoriaSeleccionada = cat;
+            renderizarCategorias();
+            renderizarCatalogo();
+        }
+
+        function renderizarCatalogo() {
+            const grilla = document.getElementById('grilla-productos');
+            const filtroTexto = document.getElementById('input-buscador').value.trim().toLowerCase();
+            grilla.innerHTML = '';
+
+            let productosFiltrados = catalogo.filter(p => {
+                const coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
+                const coincideTexto = p.nombre.toLowerCase().includes(filtroTexto) || p.codigo.toLowerCase().includes(filtroTexto);
+                return coincideCat && coincideTexto;
+            });
+
+            document.getElementById('badge-contador').innerText = `${productosFiltrados.length} items`;
+
+            if (productosFiltrados.length === 0) {
+                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">No se encontraron productos</span>`;
+                return;
+            }
+
+            productosFiltrados.forEach(prod => {
+                const sinStock = prod.stock <= 0;
+                grilla.innerHTML += `
+                    <button onclick="agregarAlCarrito(${prod.id})" ${sinStock ? 'disabled' : ''} 
+                        class="bg-white border border-slate-200 p-2.5 rounded-xl shadow-sm hover:border-indigo-500 active:bg-indigo-50 flex flex-col text-left transition relative ${sinStock ? 'opacity-40 cursor-not-allowed' : ''}">
+                        <span class="absolute top-2 right-2 text-[10px] font-bold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">#${prod.codigo}</span>
+                        <span class="font-bold text-slate-800 text-xs pr-8 leading-snug">${prod.nombre}</span>
+                        <div class="flex justify-between items-end mt-2">
+                            <span class="text-indigo-900 font-black text-sm">$${prod.precio.toLocaleString()}</span>
+                            <span class="text-[10px] ${prod.stock < 10 ? 'text-red-500 font-bold' : 'text-slate-400'}">Stock: ${prod.stock}</span>
+                        </div>
+                    </button>
+                `;
+            });
+        }
+
+        function filtrarCatalogo() {
+            renderizarCatalogo();
+        }
+
+        function limpiarBuscador() {
+            document.getElementById('input-buscador').value = '';
+            renderizarCatalogo();
+            document.getElementById('input-buscador').focus();
+        }
+
+        function cambiarVendedor(nombre) {
+            vendedorActual = nombre;
+            document.getElementById('vendedor-label').innerText = `Vendedor: ${vendedorActual}`;
+        }
+
+        function agregarAlCarrito(id) {
+            const producto = catalogo.find(p => p.id === id);
+            if (!producto || producto.stock <= 0) return;
+
+            const itemExistente = carrito.find(i => i.id === id);
+            
+            if (itemExistente) {
+                if (itemExistente.cantidad < producto.stock) {
+                    itemExistente.cantidad++;
+                } else {
+                    alert("Alcanzado el límite de stock disponible");
+                }
+            } else {
+                carrito.push({ ...producto, cantidad: 1 });
+            }
+
+            renderizarCarrito();
+        }
+
+        function agregarMontoLibre() {
+            let montoStr = prompt("Ingrese el monto a cobrar ($):", "");
+            if (!montoStr) return;
+            let monto = parseFloat(montoStr);
+            if (isNaN(monto) || monto <= 0) return;
+
+            carrito.push({
+                id: Date.now(),
+                codigo: "VARIOS",
+                nombre: "Producto Varios",
+                precio: monto,
+                cantidad: 1,
+                esMontoLibre: true
+            });
+
+            renderizarCarrito();
+        }
+
+        function modificarCantidad(id, cambio) {
+            const item = carrito.find(i => i.id === id);
+            if (!item) return;
+
+            const productoOriginal = catalogo.find(p => p.id === id);
+            item.cantidad += cambio;
+
+            if (item.cantidad <= 0) {
+                carrito = carrito.filter(i => i.id !== id);
+            } else if (!item.esMontoLibre && item.cantidad > productoOriginal.stock) {
+                item.cantidad = productoOriginal.stock;
+                alert("Stock máximo alcanzado");
+            }
+
+            renderizarCarrito();
+        }
+
+        function renderizarCarrito() {
+            const cont = document.getElementById('contenedor-items-carrito');
+            const totalElemento = document.getElementById('total-carrito');
+            
+            if (carrito.length === 0) {
+                cont.innerHTML = `<span class="text-slate-400 text-center py-2 text-xs">Carrito vacío - Seleccione productos arriba</span>`;
+                totalElemento.innerText = '$0';
+                return;
+            }
+
+            cont.innerHTML = '';
+            let total = 0;
+
+            carrito.forEach(item => {
+                let subtotal = item.precio * item.cantidad;
+                total += subtotal;
+
+                cont.innerHTML += `
+                    <div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-0">
+                        <div class="flex-1 pr-2">
+                            <span class="font-bold text-slate-800">${item.nombre}</span>
+                            <span class="text-[10px] text-slate-500 block">$${item.precio.toLocaleString()} c/u</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex items-center bg-slate-200 rounded-lg font-bold">
+                                <button onclick="modificarCantidad(${item.id}, -1)" class="px-2 py-0.5 text-slate-600 hover:text-black">-</button>
+                                <span class="px-1 text-slate-800">${item.cantidad}</span>
+                                <button onclick="modificarCantidad(${item.id}, 1)" class="px-2 py-0.5 text-slate-600 hover:text-black">+</button>
+                            </div>
+                            <span class="font-black text-slate-900 w-14 text-right">$${subtotal.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            totalElemento.innerText = `$${total.toLocaleString()}`;
+        }
+
+        function vaciarCarrito() {
+            carrito = [];
+            renderizarCarrito();
+        }
+
+        function procesarVenta() {
+            if (carrito.length === 0) return;
+
+            let totalVenta = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+
+            carrito.forEach(itemCarrito => {
+                if (!itemCarrito.esMontoLibre) {
+                    let prod = catalogo.find(p => p.id === itemCarrito.id);
+                    if (prod) prod.stock -= itemCarrito.cantidad;
+                }
+            });
+
+            ventas.push({
+                id: Date.now(),
+                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                vendedor: vendedorActual,
+                total: totalVenta,
+                itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0)
+            });
+
+            guardarEstado();
+            vaciarCarrito();
+            renderizarCatalogo();
+            limpiarBuscador();
+        }
+
+        function abrirRendicion() {
+            document.getElementById('modal-rendicion').classList.remove('hidden');
+            
+            let totalGeneral = ventas.reduce((acc, v) => acc + v.total, 0);
+            document.getElementById('rendicion-total-general').innerText = `$${totalGeneral.toLocaleString()}`;
+            document.getElementById('rendicion-total-ops').innerText = `${ventas.length} operaciones totales`;
+
+            const vendedores = ["Vendedor 1", "Vendedor 2", "Vendedor 3"];
+            const contDesglose = document.getElementById('desglose-vendedores');
+            contDesglose.innerHTML = '';
+
+            vendedores.forEach(v => {
+                let ventasVendedor = ventas.filter(op => op.vendedor === v);
+                let totalV = ventasVendedor.reduce((acc, op) => acc + op.total, 0);
+
+                contDesglose.innerHTML += `
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <span class="font-bold text-slate-700">${v}</span>
+                        <div class="text-right">
+                            <span class="font-black text-indigo-900 block">$${totalV.toLocaleString()}</span>
+                            <span class="text-[9px] text-slate-400">${ventasVendedor.length} ops</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const contHistorial = document.getElementById('lista-historial-ventas');
+            contHistorial.innerHTML = '';
+
+            if (ventas.length === 0) {
+                contHistorial.innerHTML = `<span class="p-3 text-center block text-slate-400">Sin ventas aún</span>`;
+            } else {
+                [...ventas].reverse().forEach(v => {
+                    contHistorial.innerHTML += `
+                        <div class="p-2 flex justify-between items-center">
+                            <div>
+                                <span class="font-bold text-slate-800">${v.hora}</span>
+                                <span class="text-[10px] text-slate-500 block">${v.vendedor} (${v.itemsCount} ítems)</span>
+                            </div>
+                            <span class="font-black text-emerald-600">$${v.total.toLocaleString()}</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function cerrarRendicion() {
+            document.getElementById('modal-rendicion').classList.add('hidden');
+        }
+
+        function reiniciarCajaTurno() {
+            if (confirm("¿Está seguro de reiniciar la caja del día? Se borrará el historial de ventas actuales.")) {
+                ventas = [];
+                guardarEstado();
+                abrirRendicion();
+            }
+        }
+
+        function abrirModalInventario() {
+            document.getElementById('modal-inventario').classList.remove('hidden');
+        }
+
+        function cerrarModalInventario() {
+            document.getElementById('modal-inventario').classList.add('hidden');
+        }
+
+        // IMPORTAR DIRECTO DESDE LO COPIADO DE EXCEL (TABULACIONES)
+        function importarDesdeTextoExcel() {
+            const texto = document.getElementById('textarea-excel').value.trim();
+            if (!texto) {
+                alert("Por favor, pega los datos copiados de Excel en la caja de texto.");
+                return;
+            }
+
+            const lineas = texto.split('\n');
+            let nuevoCatalogo = [];
+
+            lineas.forEach((linea, index) => {
+                if (!linea.trim()) return;
+                
+                // Excel al copiar celdas separa las columnas con Tabulaciones (\t)
+                const cols = linea.split('\t');
+                
+                // Si la primera fila tiene la palabra "Codigo", la ignoramos (es la cabecera)
+                if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
+
+                if (cols.length >= 5) {
+                    let codigo = cols[0].trim();
+                    let nombre = cols[1].trim();
+                    let categoria = cols[2].trim();
+                    let precio = parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0;
+                    let stock = parseInt(cols[4].trim()) || 0;
+
+                    nuevoCatalogo.push({
+                        id: Date.now() + index,
+                        codigo: codigo,
+                        nombre: nombre,
+                        categoria: categoria,
+                        precio: precio,
+                        stock: stock
+                    });
+                }
+            });
+
+            if (nuevoCatalogo.length > 0) {
+                catalogo = nuevoCatalogo;
+                guardarEstado();
+                renderizarCategorias();
+                renderizarCatalogo();
+                alert(`¡Éxito! Se importaron ${nuevoCatalogo.length} productos correctamente.`);
+                document.getElementById('textarea-excel').value = '';
+                cerrarModalInventario();
+            } else {
+                alert("No se pudieron reconocer los datos. Asegúrate de copiar las 5 columnas desde Excel (Código, Nombre, Categoría, Precio, Stock).");
+            }
+        }
+
+        function procesarArchivoCSV(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const texto = evt.target.result;
+                const lineas = texto.split(/\r\n|\n/);
+                let nuevoCatalogo = [];
+
+                lineas.forEach((linea, index) => {
+                    if (index === 0 || !linea.trim()) return;
+                    const separador = linea.includes(';') ? ';' : ',';
+                    const cols = linea.split(separador);
+                    
+                    if (cols.length >= 5) {
+                        nuevoCatalogo.push({
+                            id: Date.now() + index,
+                            codigo: cols[0].trim().replace(/^"|"$/g, ''),
+                            nombre: cols[1].trim().replace(/^"|"$/g, ''),
+                            categoria: cols[2].trim().replace(/^"|"$/g, ''),
+                            precio: parseFloat(cols[3].trim().replace(/^"|"$/g, '').replace(',', '.')) || 0,
+                            stock: parseInt(cols[4].trim().replace(/^"|"$/g, '')) || 0
+                        });
+                    }
+                });
+
+                if (nuevoCatalogo.length > 0) {
+                    catalogo = nuevoCatalogo;
+                    guardarEstado();
+                    renderizarCategorias();
+                    renderizarCatalogo();
+                    alert(`¡Éxito! Se cargaron ${nuevoCatalogo.length} productos.`);
+                    cerrarModalInventario();
+                } else {
+                    alert("No se pudieron leer los productos del CSV.");
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function cargarCatalogoPredeterminado() {
+            catalogo = [...CATALOGO_INICIAL];
+            guardarEstado();
+            renderizarCategorias();
+            renderizarCatalogo();
+            alert("Catálogo predeterminado cargado.");
+            cerrarModalInventario();
+        }
+    </script>
+</body>
+</html>
