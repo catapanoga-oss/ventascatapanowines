@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS en Tiempo Real - Visitas, Stock y Reportes Detallados</title>
+    <title>POS en Tiempo Real - Visitas, Stock & Reportes Dinámicos</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -35,8 +35,8 @@
                     <option value="Vendedor 3">Vendedor 3</option>
                 </select>
 
-                <button onclick="abrirModalInventario()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Gestionar Inventario">
-                    📦
+                <button onclick="solicitarAccesoAdmin()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Gestión de Stock (Admin)">
+                    🔐
                 </button>
             </div>
         </header>
@@ -169,11 +169,11 @@
             </div>
         </div>
 
-        <!-- MODAL DE RENDICIÓN Y REPORTE DETALLADO -->
+        <!-- MODAL DE RENDICIÓN Y INFORMES DINÁMICOS -->
         <div id="modal-rendicion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Rendición y Reportes de Stock</h3>
+                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Informes Dinámicos y Caja</h3>
                     <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
                 </div>
                 
@@ -184,21 +184,27 @@
                         <span class="block text-[10px] text-indigo-400 mt-1" id="rendicion-total-ops">0 operaciones registradas</span>
                     </div>
 
-                    <!-- MÓDULO DE EXPORTACIÓN CON DETALLE DE PRODUCTOS -->
+                    <!-- MÓDULO DE INFORMES DINÁMICOS -->
                     <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-emerald-900 text-xs flex items-center gap-1">📥 Descargar Reporte de Ventas y Productos</h4>
+                        <h4 class="font-bold text-emerald-900 text-xs flex items-center gap-1">📥 Exportar Reporte Unipauta Prolijo</h4>
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Desde:</label>
-                                <input type="date" id="reporte-fecha-desde" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
+                                <input type="date" id="reporte-fecha-desde" onchange="generarPreviaInforme()" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
                             </div>
                             <div>
                                 <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Hasta:</label>
-                                <input type="date" id="reporte-fecha-hasta" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
+                                <input type="date" id="reporte-fecha-hasta" onchange="generarPreviaInforme()" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
                             </div>
                         </div>
+
+                        <!-- PREVIA EN PANTALLA DE PRODUCTOS VENDIDOS -->
+                        <div id="previa-informe-productos" class="mt-1 max-h-28 overflow-y-auto bg-white border border-emerald-200 rounded-lg p-2 text-[10px]">
+                            <span class="text-slate-400 block text-center">Selecciona un rango para ver cantidades...</span>
+                        </div>
+
                         <button onclick="exportarReporteExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition shadow text-xs mt-1">
-                            📊 Descargar Excel Detallado (.csv)
+                            📊 Descargar Excel Unilinea (.csv)
                         </button>
                     </div>
 
@@ -208,7 +214,7 @@
                     </div>
 
                     <div>
-                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones</h4>
+                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones (Línea por Línea)</h4>
                         <div class="max-h-36 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
                     </div>
                 </div>
@@ -221,43 +227,75 @@
             </div>
         </div>
 
-        <!-- MODAL DE INVENTARIO -->
+        <!-- MODAL EXCLUSIVO DE ADMINISTRADOR -->
         <div id="modal-inventario" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">📦 Gestión de Inventario</h3>
+                    <h3 class="font-bold text-sm flex items-center gap-2">🔐 Panel de Administración y Stock</h3>
                     <button onclick="cerrarModalInventario()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
                 </div>
                 
                 <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
-                    <div class="bg-red-50 border border-red-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-red-800 text-sm">⚠️ Limpiar Base de Datos</h4>
-                        <button onclick="borrarTodaLaBaseDeDatos()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow text-center">
-                            🗑️ Borrar todo el Catálogo
-                        </button>
-                    </div>
-
+                    
                     <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-indigo-900 text-sm">✨ Pegar directo desde Excel</h4>
-                        <textarea id="textarea-excel" rows="4" placeholder="Haz clic aquí y presiona Ctrl + V..." 
-                            class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
-                        <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl shadow transition text-center">
-                            🚀 Importar Inventario
+                        <h4 class="font-bold text-indigo-950 text-sm">📦 Reposición y Ajuste Manual</h4>
+                        <p class="text-slate-600 text-[11px]">Busca un producto para ingresar stock nuevo o corregir su inventario actual:</p>
+                        
+                        <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs font-bold outline-none">
+                            <option value="">-- Seleccionar Producto --</option>
+                        </select>
+
+                        <div id="panel-reposicion-detalle" class="hidden flex-col gap-2 pt-2 border-t border-indigo-200">
+                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border">
+                                <span class="font-bold text-slate-700" id="repo-prod-nombre">--</span>
+                                <span class="text-xs bg-slate-100 text-slate-800 font-black px-2 py-1 rounded">Stock Actual: <b id="repo-prod-stock-actual">0</b></span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Cantidad:</label>
+                                    <input type="number" id="input-cant-reposicion" min="1" value="10" class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs font-bold outline-none">
+                                </div>
+                                <div class="flex items-end gap-1">
+                                    <button onclick="ejecutarAccionStock('SUMAR')" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
+                                        ➕ Sumar
+                                    </button>
+                                    <button onclick="ejecutarAccionStock('FIJAR')" class="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
+                                        ✏️ Fijar Exacto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-2">
+                        <h4 class="font-bold text-slate-800 text-xs">✨ Carga Masiva desde Excel</h4>
+                        <textarea id="textarea-excel" rows="3" placeholder="Pega aquí las columnas copiadas desde Excel..." 
+                            class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
+                        <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl shadow transition text-center text-xs">
+                            🚀 Importar Inventario Completo
                         </button>
                     </div>
 
-                    <div class="border-t pt-2">
-                        <button onclick="cargarCatalogoPredeterminado()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-xl text-xs">
-                            Cargar Catálogo Predeterminado
-                        </button>
+                    <div class="bg-red-50 border border-red-200 p-3 rounded-xl flex flex-col gap-2">
+                        <h4 class="font-bold text-red-800 text-xs">⚠️ Zona de Control Total</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="cargarCatalogoPredeterminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-lg text-[10px]">
+                                Cargar Predeterminados
+                            </button>
+                            <button onclick="borrarTodaLaBaseDeDatos()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
+                                🗑️ Borrar Catálogo
+                            </button>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- FIREBASE & LÓGICA JAVASCRIPT -->
+    <!-- FIREBASE & LÓGICA JAVASCRIPT SEGURA -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -273,6 +311,8 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        const ADMIN_PIN = "1234";
 
         let catalogo = [];
         let carrito = [];
@@ -302,6 +342,7 @@
 
         let vendedorActual = "Vendedor 1";
         let categoriaSeleccionada = "TODAS";
+        let productoSeleccionadoRepo = null;
 
         window.onload = async function() {
             configurarScrollCategorias();
@@ -331,6 +372,7 @@
                 });
                 renderizarCategorias();
                 renderizarCatalogo();
+                actualizarSelectReposicion();
             });
 
             onSnapshot(collection(db, "ventas"), (snapshot) => {
@@ -342,7 +384,85 @@
                     if (vData.guia) guiasList.add(vData.guia);
                 });
                 actualizarListasDesplegables();
+                generarPreviaInforme();
             });
+        }
+
+        window.solicitarAccesoAdmin = function() {
+            let pinIngresado = prompt("🔒 Ingrese la contraseña de Administrador:");
+            if (pinIngresado === ADMIN_PIN) {
+                abrirModalInventario();
+            } else if (pinIngresado !== null) {
+                alert("❌ Contraseña incorrecta. Acceso denegado.");
+            }
+        }
+
+        function actualizarSelectReposicion() {
+            const select = document.getElementById('select-producto-reposicion');
+            if (!select) return;
+            select.innerHTML = `<option value="">-- Seleccionar Producto --</option>`;
+            catalogo.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => {
+                select.innerHTML += `<option value="${p.id}">#${p.codigo} - ${p.nombre} (Stock: ${p.stock})</option>`;
+            });
+        }
+
+        window.seleccionarProductoReposicion = function(id) {
+            let panel = document.getElementById('panel-reposicion-detalle');
+            if (!id) {
+                panel.classList.add('hidden');
+                productoSeleccionadoRepo = null;
+                return;
+            }
+
+            productoSeleccionadoRepo = catalogo.find(p => p.id === id);
+            if (productoSeleccionadoRepo) {
+                document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
+                document.getElementById('repo-prod-stock-actual').innerText = productoSeleccionadoRepo.stock;
+                panel.classList.remove('hidden');
+                panel.classList.add('flex');
+            }
+        }
+
+        window.ejecutarAccionStock = async function(modo) {
+            if (!productoSeleccionadoRepo) return;
+
+            let cantInput = parseInt(document.getElementById('input-cant-reposicion').value);
+            if (isNaN(cantInput) || cantInput < 0) {
+                alert("Ingrese una cantidad válida.");
+                return;
+            }
+
+            let stockAnterior = productoSeleccionadoRepo.stock;
+            let stockNuevo = modo === 'SUMAR' ? stockAnterior + cantInput : cantInput;
+            let diferencia = stockNuevo - stockAnterior;
+
+            productoSeleccionadoRepo.stock = stockNuevo;
+
+            const batch = writeBatch(db);
+
+            let prodRef = doc(db, "catalogo", productoSeleccionadoRepo.id);
+            batch.set(prodRef, productoSeleccionadoRepo);
+
+            let ahora = new Date();
+            let logRef = doc(collection(db, "movimientos_stock"));
+            batch.set(logRef, {
+                fecha: ahora.toLocaleDateString(),
+                hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                productoId: productoSeleccionadoRepo.id,
+                productoNombre: productoSeleccionadoRepo.nombre,
+                codigo: productoSeleccionadoRepo.codigo,
+                tipoMovimiento: modo === 'SUMAR' ? 'REPOSICION' : 'AJUSTE_MANUAL',
+                cantidadModificada: diferencia,
+                stockAnterior: stockAnterior,
+                stockResultante: stockNuevo,
+                usuario: "Administrador",
+                timestamp: Date.now()
+            });
+
+            await batch.commit();
+
+            alert(`¡Stock actualizado! Nuevo stock de ${productoSeleccionadoRepo.nombre}: ${stockNuevo} unidades.`);
+            seleccionarProductoReposicion(productoSeleccionadoRepo.id);
         }
 
         function actualizarListasDesplegables() {
@@ -409,7 +529,7 @@
             document.getElementById('badge-contador').innerText = `${productosFiltrados.length} items`;
 
             if (productosFiltrados.length === 0) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Catálogo vacío - Sube tu inventario</span>`;
+                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Catálogo vacío - Solicita acceso al Admin</span>`;
                 return;
             }
 
@@ -599,39 +719,79 @@
             let totalVisita = cantPersonas * precioUnitario;
 
             let totalCarritoProductos = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-            let totalVentaFinal = totalVisita > 0 ? totalVisita : totalCarritoProductos;
+            let totalVentaFinal = totalVisita > 0 ? (totalVisita + totalCarritoProductos) : totalCarritoProductos;
 
             const batch = writeBatch(db);
-
-            // Descontar stock y armar el detalle de productos vendidos
             let productosVendidosResumen = [];
+            let itemsEstructurados = [];
+            let ahora = new Date();
 
             for (let itemCarrito of carrito) {
                 const esCombo = Boolean((itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') || itemCarrito.categoria.toLowerCase() === 'combos' || itemCarrito.nombre.toLowerCase().includes('combo'));
 
                 productosVendidosResumen.push(`${itemCarrito.nombre} (x${itemCarrito.cantidad})`);
+                itemsEstructurados.push({
+                    id: itemCarrito.id,
+                    nombre: itemCarrito.nombre,
+                    cantidad: itemCarrito.cantidad,
+                    precioUnitario: itemCarrito.precio,
+                    subtotal: itemCarrito.precio * itemCarrito.cantidad
+                });
 
                 if (esCombo && itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') {
                     let componentes = obtenerComponentesParseados(itemCarrito.componentesStr);
                     for (let comp of componentes) {
                         let prodIndividual = catalogo.find(p => p.codigo.toLowerCase() === comp.codigo.toLowerCase());
                         if (prodIndividual) {
-                            prodIndividual.stock -= (comp.cant * itemCarrito.cantidad);
+                            let cantTotalA_Descontar = comp.cant * itemCarrito.cantidad;
+                            let stockAnt = prodIndividual.stock;
+                            prodIndividual.stock -= cantTotalA_Descontar;
+                            
                             let ref = doc(db, "catalogo", prodIndividual.id);
                             batch.set(ref, prodIndividual);
+
+                            let logRef = doc(collection(db, "movimientos_stock"));
+                            batch.set(logRef, {
+                                fecha: ahora.toLocaleDateString(),
+                                hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                productoId: prodIndividual.id,
+                                productoNombre: prodIndividual.nombre,
+                                codigo: prodIndividual.codigo,
+                                tipoMovimiento: 'VENTA_COMBO',
+                                cantidadModificada: -cantTotalA_Descontar,
+                                stockAnterior: stockAnt,
+                                stockResultante: prodIndividual.stock,
+                                usuario: vendedorActual,
+                                timestamp: Date.now()
+                            });
                         }
                     }
                 } else if (!itemCarrito.esMontoLibre) {
                     let prod = catalogo.find(p => p.id === itemCarrito.id);
                     if (prod) {
+                        let stockAnt = prod.stock;
                         prod.stock -= itemCarrito.cantidad;
                         let ref = doc(db, "catalogo", prod.id);
                         batch.set(ref, prod);
+
+                        let logRef = doc(collection(db, "movimientos_stock"));
+                        batch.set(logRef, {
+                            fecha: ahora.toLocaleDateString(),
+                            hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            productoId: prod.id,
+                            productoNombre: prod.nombre,
+                            codigo: prod.codigo,
+                            tipoMovimiento: 'VENTA_DIRECTA',
+                            cantidadModificada: -itemCarrito.cantidad,
+                            stockAnterior: stockAnt,
+                            stockResultante: prod.stock,
+                            usuario: vendedorActual,
+                            timestamp: Date.now()
+                        });
                     }
                 }
             }
 
-            let ahora = new Date();
             let fechaISO = ahora.toISOString().split('T')[0];
             let fechaStr = ahora.toLocaleDateString();
             let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -645,9 +805,13 @@
                 agencia: agencia,
                 guia: guia,
                 cantPersonas: cantPersonas,
-                precioUnitario: precioUnitario,
+                precioUnitarioVisita: precioUnitario,
+                totalVisita: totalVisita,
+                totalProductos: totalCarritoProductos,
+                totalVenta: totalVentaFinal,
                 total: totalVentaFinal,
-                productosDetalle: productosVendidosResumen.join(" | "),
+                productosDetalle: productosVendidosResumen.join("; "),
+                itemsEstructurados: itemsEstructurados,
                 itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
                 timestamp: Date.now()
             });
@@ -658,7 +822,7 @@
             vaciarCarrito();
             renderizarCatalogo();
             limpiarBuscador();
-            alert("¡Venta registrada y stock descontado con éxito!");
+            alert("¡Venta registrada con éxito!");
         }
 
         window.abrirRendicion = function() {
@@ -692,23 +856,73 @@
             } else {
                 [...ventas].sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
                     contHistorial.innerHTML += `
-                        <div class="p-2.5 flex flex-col gap-1 border-b last:border-0 bg-slate-50/50 rounded-lg mb-1">
-                            <div class="flex justify-between items-center">
-                                <span class="font-bold text-slate-800">${v.agencia}</span>
-                                <span class="font-black text-emerald-600">$${v.total.toLocaleString()}</span>
+                        <div class="p-2 flex flex-col gap-0.5 border-b last:border-0 bg-slate-50/50 rounded-lg mb-1">
+                            <div class="flex justify-between items-center font-bold text-slate-800">
+                                <span>${v.agencia} (${v.guia})</span>
+                                <span class="text-emerald-600">$${v.total.toLocaleString()}</span>
                             </div>
-                            <span class="text-[10px] text-slate-600 bg-slate-100 p-1 rounded">📦 ${v.productosDetalle || 'Sin productos'}</span>
                             <div class="flex justify-between text-[10px] text-slate-500">
-                                <span>Guía: <b>${v.guia}</b> (${v.cantPersonas} pax)</span>
-                                <span>${v.fecha || ''} ${v.hora} • ${v.vendedor}</span>
+                                <span>Pax: ${v.cantPersonas} • Items: ${v.productosDetalle || 'Solo Visita'}</span>
+                                <span>${v.hora}</span>
                             </div>
                         </div>
                     `;
                 });
             }
+
+            generarPreviaInforme();
         }
 
-        // EXPORTACIÓN A EXCEL CON DETALLE DE PRODUCTOS Y AUDITORÍA DE TIEMPO
+        // PREVIA DINÁMICA EN PANTALLA
+        window.generarPreviaInforme = function() {
+            let fechaDesde = document.getElementById('reporte-fecha-desde').value;
+            let fechaHasta = document.getElementById('reporte-fecha-hasta').value;
+            const cont = document.getElementById('previa-informe-productos');
+
+            if (!fechaDesde || !fechaHasta) return;
+
+            let fDesde = new Date(fechaDesde + 'T00:00:00').getTime();
+            let fHasta = new Date(fechaHasta + 'T23:59:59').getTime();
+
+            let ventasFiltradas = ventas.filter(v => (v.timestamp || 0) >= fDesde && (v.timestamp || 0) <= fHasta);
+
+            if (ventasFiltradas.length === 0) {
+                cont.innerHTML = `<span class="text-slate-400 block text-center">Sin ventas en este rango.</span>`;
+                return;
+            }
+
+            let acumulado = {};
+            ventasFiltradas.forEach(v => {
+                if (v.itemsEstructurados && v.itemsEstructurados.length > 0) {
+                    v.itemsEstructurados.forEach(item => {
+                        if (!acumulado[item.nombre]) acumulado[item.nombre] = { cant: 0, monto: 0 };
+                        acumulado[item.nombre].cant += item.cantidad;
+                        acumulado[item.nombre].monto += item.subtotal;
+                    });
+                } else if (v.productosDetalle) {
+                    let items = v.productosDetalle.split('; ');
+                    items.forEach(item => {
+                        let match = item.match(/(.+)\(x(\d+)\)/);
+                        let nom = match ? match[1].trim() : item;
+                        let cant = match ? parseInt(match[2]) : 1;
+                        if (!acumulado[nom]) acumulado[nom] = { cant: 0, monto: 0 };
+                        acumulado[nom].cant += cant;
+                    });
+                }
+            });
+
+            cont.innerHTML = `<div class="font-bold text-slate-700 mb-1 border-b pb-0.5">Resumen de Cantidades Vendidas:</div>`;
+            Object.entries(acumulado).sort((a,b) => b[1].cant - a[1].cant).forEach(([prod, data]) => {
+                cont.innerHTML += `
+                    <div class="flex justify-between py-0.5 border-b border-slate-100 last:border-0">
+                        <span class="truncate pr-2">${prod}</span>
+                        <span class="font-bold text-indigo-900 shrink-0">${data.cant} un. ${data.monto > 0 ? '($' + data.monto.toLocaleString() + ')' : ''}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // EXPORTACIÓN EXCEL UNILÍNEA PROLIJA CON RESUMEN COMPLETO
         window.exportarReporteExcel = function() {
             let fechaDesde = document.getElementById('reporte-fecha-desde').value;
             let fechaHasta = document.getElementById('reporte-fecha-hasta').value;
@@ -721,21 +935,18 @@
             let fDesde = new Date(fechaDesde + 'T00:00:00').getTime();
             let fHasta = new Date(fechaHasta + 'T23:59:59').getTime();
 
-            let ventasFiltradas = ventas.filter(v => {
-                let t = v.timestamp || 0;
-                return t >= fDesde && t <= fHasta;
-            });
+            let ventasFiltradas = ventas.filter(v => (v.timestamp || 0) >= fDesde && (v.timestamp || 0) <= fHasta);
 
             if (ventasFiltradas.length === 0) {
-                alert("No se encontraron ventas registradas en el intervalo de tiempo seleccionado.");
+                alert("No se encontraron ventas en el periodo seleccionado.");
                 return;
             }
 
-            // ACUMULADOR PARA SABER CUÁNTO SE VENDIó DE CADA PRODUCTO EN TOTAL EN ESE PERIODO
-            let productosAcumulados = {};
-
-            let csvContent = "\uFEFF"; // BOM para Excel
-            csvContent += "Fecha,Hora,Vendedor,Agencia,Guia,Cant Personas,Precio Unitario,Total Cobrado,Productos Vendidos\n";
+            let csvContent = "\uFEFF"; // BOM UTF-8 para Excel
+            
+            // HOJA 1 / SECCIÓN 1: OPERACIONES LÍNEA POR LÍNEA
+            csvContent += "REGISTRO DE VENTAS Y OPERACIONES (LÍNEA POR LÍNEA)\n";
+            csvContent += "Fecha,Hora,Vendedor,Agencia,Guia,Pax,Precio Unit. Visita,Total Visita ($),Total Productos ($),TOTAL OPERACION ($),Detalle Productos\n";
 
             ventasFiltradas.sort((a,b) => a.timestamp - b.timestamp).forEach(v => {
                 let fila = [
@@ -745,44 +956,56 @@
                     `"${v.agencia || 'Sin Agencia'}"`,
                     `"${v.guia || 'Sin Guia'}"`,
                     v.cantPersonas || 1,
-                    v.precioUnitario || 0,
+                    v.precioUnitarioVisita || v.precioUnitario || 0,
+                    v.totalVisita || 0,
+                    v.totalProductos || 0,
                     v.total || 0,
-                    `"${v.productosDetalle || ''}"`
+                    `"${v.productosDetalle || 'Solo Visita'}"`
                 ].join(",");
                 csvContent += fila + "\n";
             });
 
-            // Agregamos una sección extra al final del CSV con el resumen total por producto vendido
-            csvContent += "\n\n--- RESUMEN TOTAL DE PRODUCTOS VENDIDOS EN EL PERIODO ---\n";
-            csvContent += "Producto / Artículo,Cantidad Total Saliente\n";
+            // HOJA 2 / SECCIÓN 2: RESUMEN ACUMULADO DE PRODUCTOS (CANTIDADES E IMPORTES)
+            let productosAcumulados = {};
+            let totalGeneralMontoProductos = 0;
 
             ventasFiltradas.forEach(v => {
-                // Parsear el string de productos para sumarlos
-                if (v.productosDetalle) {
-                    let items = v.productosDetalle.split(' | ');
-                    items.forEach(item => {
-                        // Extraer nombre y cantidad (ej: "Vela Chica (x2)")
-                        let match = item.match(/(.+)\(x(\d+)\)/);
-                        if (match) {
-                            let nombreProd = match[1].trim();
-                            let cantProd = parseInt(match[2]) || 1;
-                            productosAcumulados[nombreProd] = (productosAcumulados[nombreProd] || 0) + cantProd;
-                        } else {
-                            productosAcumulados[item] = (productosAcumulados[item] || 0) + 1;
+                if (v.itemsEstructurados && v.itemsEstructurados.length > 0) {
+                    v.itemsEstructurados.forEach(item => {
+                        if (!productosAcumulados[item.nombre]) {
+                            productosAcumulados[item.nombre] = { cantidad: 0, montoTotal: 0 };
                         }
+                        productosAcumulados[item.nombre].cantidad += item.cantidad;
+                        productosAcumulados[item.nombre].montoTotal += item.subtotal;
+                        totalGeneralMontoProductos += item.subtotal;
+                    });
+                } else if (v.productosDetalle) {
+                    let items = v.productosDetalle.split('; ');
+                    items.forEach(item => {
+                        let match = item.match(/(.+)\(x(\d+)\)/);
+                        let nombre = match ? match[1].trim() : item;
+                        let cant = match ? parseInt(match[2]) : 1;
+                        if (!productosAcumulados[nombre]) {
+                            productosAcumulados[nombre] = { cantidad: 0, montoTotal: 0 };
+                        }
+                        productosAcumulados[nombre].cantidad += cant;
                     });
                 }
             });
 
-            for (let [prod, cant] of Object.entries(productosAcumulados)) {
-                csvContent += `"${prod}",${cant}\n`;
-            }
+            csvContent += "\n\n";
+            csvContent += "RESUMEN CONSOLIDADO DE PRODUCTOS VENDIDOS (INVENTARIO SALIENTE)\n";
+            csvContent += "Producto / Articulo,Cantidad Total Vendida,Monto Recaudado ($)\n";
+
+            Object.entries(productosAcumulados).sort((a,b) => b[1].cantidad - a[1].cantidad).forEach(([prod, data]) => {
+                csvContent += `"${prod}",${data.cantidad},${data.montoTotal}\n`;
+            });
 
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let link = document.createElement("a");
             let url = URL.createObjectURL(blob);
             link.setAttribute("href", url);
-            link.setAttribute("download", `Reporte_Stock_Ventas_${fechaDesde}_al_${fechaHasta}.csv`);
+            link.setAttribute("download", `Informe_Ventas_y_Productos_${fechaDesde}_al_${fechaHasta}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -888,7 +1111,7 @@
                 { id: "1", codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150, componentesStr: "" },
                 { id: "2", codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80, componentesStr: "" },
                 { id: "3", codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45, componentesStr: "" },
-                { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", "precio": 800, stock: 200, componentesStr: "" },
+                { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200, componentesStr: "" },
                 { id: "5", codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" }
             ];
 
