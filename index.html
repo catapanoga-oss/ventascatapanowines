@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS en Tiempo Real - Visitas, Stock & Reportes Dinámicos</title>
-    <!-- Tailwind CSS -->
+    <title>POS Google Sheets - Visitas y Stock</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .touch-none { touch-action: manipulation; user-select: none; }
@@ -16,496 +15,213 @@
 
     <div class="w-full max-w-md bg-slate-100 min-h-screen flex flex-col shadow-2xl relative overflow-hidden">
         
-        <!-- ENCABEZADO Y PERFIL DE VENDEDOR -->
         <header class="bg-indigo-950 text-white p-3 flex justify-between items-center shadow-md z-10">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-indigo-100 shadow">
-                    🎟️
-                </div>
+                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-indigo-100 shadow">📊</div>
                 <div>
-                    <h1 class="font-bold text-sm tracking-wide text-indigo-100 leading-none">Control Visitas & POS</h1>
+                    <h1 class="font-bold text-sm tracking-wide text-indigo-100 leading-none">POS Google Sheets</h1>
                     <span class="text-[10px] text-indigo-300 font-medium" id="vendedor-label">Vendedor: Vendedor 1</span>
                 </div>
             </div>
-
             <div class="flex items-center gap-1.5">
                 <select id="select-vendedor" onchange="cambiarVendedor(this.value)" class="bg-indigo-900 text-indigo-100 text-xs px-2 py-1.5 rounded-lg border border-indigo-700 outline-none font-semibold cursor-pointer">
                     <option value="Vendedor 1">Vendedor 1</option>
                     <option value="Vendedor 2">Vendedor 2</option>
                     <option value="Vendedor 3">Vendedor 3</option>
                 </select>
-
-                <button onclick="solicitarAccesoAdmin()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Gestión de Stock (Admin)">
-                    🔐
-                </button>
+                <button onclick="solicitarAccesoAdmin()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Admin">🔐</button>
             </div>
         </header>
 
-        <!-- BUSCADOR RÁPIDO & FILTRO DE CATEGORÍAS -->
         <section class="bg-indigo-900 p-2.5 shadow-md flex flex-col gap-2 z-10">
             <div class="relative">
                 <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Escriba código o nombre..." 
                     class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm font-medium px-3 py-2 rounded-xl outline-none border-2 border-indigo-700 focus:border-indigo-400 transition pr-8">
-                <button onclick="limpiarBuscador()" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs font-bold">
-                    ✕
-                </button>
+                <button onclick="limpiarBuscador()" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs font-bold">✕</button>
             </div>
-
-            <!-- CONTENEDOR DE CATEGORÍAS -->
-            <div class="relative flex items-center">
-                <button onclick="desplazarCategorias(-100)" class="hidden sm:flex bg-indigo-950 hover:bg-indigo-800 text-indigo-200 text-xs font-bold px-1.5 py-1 rounded-l-lg z-10 items-center justify-center">
-                    ‹
-                </button>
-                <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium w-full scroll-smooth" id="contenedor-categorias"></div>
-                <button onclick="desplazarCategorias(100)" class="hidden sm:flex bg-indigo-950 hover:bg-indigo-800 text-indigo-200 text-xs font-bold px-1.5 py-1 rounded-r-lg z-10 items-center justify-center">
-                    ›
-                </button>
-            </div>
+            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium w-full scroll-smooth" id="contenedor-categorias"></div>
         </section>
 
-        <!-- CONTENIDO PRINCIPAL: GRILLA DE PRODUCTOS -->
         <main class="flex-1 p-2.5 overflow-y-auto flex flex-col gap-3 pb-36">
-            
             <div class="flex justify-between items-center">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider" id="titulo-catalogo">Artículos y Visitas</span>
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Artículos y Visitas</span>
                 <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold" id="badge-contador">0 ítems</span>
             </div>
-
             <div class="grid grid-cols-2 gap-2" id="grilla-productos">
-                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando catálogo...</span>
+                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando datos desde Sheets...</span>
             </div>
-
-            <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition active:scale-98">
+            <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
                 <span>➕ Agregar Monto Varios (Importe Libre)</span>
             </button>
-
         </main>
 
-        <!-- PANEL INFERIOR: CARRITO Y ACCIONES -->
         <section class="fixed bottom-0 max-w-md w-full bg-white border-t border-slate-200 shadow-2xl z-20 flex flex-col">
-            
             <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-1 max-h-28 overflow-y-auto" id="contenedor-items-carrito"></div>
-
             <div class="p-3 bg-white flex flex-col gap-2">
                 <div class="flex justify-between items-center">
                     <div>
                         <span class="text-xs text-slate-500 block">Total a Cobrar:</span>
                         <span class="text-2xl font-black text-indigo-950 leading-none" id="total-carrito">$0</span>
                     </div>
-                    <button onclick="vaciarCarrito()" class="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded bg-red-50">
-                        Vaciar
-                    </button>
+                    <button onclick="vaciarCarrito()" class="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded bg-red-50">Vaciar</button>
                 </div>
-
                 <div class="grid grid-cols-4 gap-2">
-                    <button onclick="abrirModalCobro()" class="col-span-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold py-3 rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    <button onclick="abrirModalCobro()" class="col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
                         <span>⚡ COBRAR Y CARGAR DATOS</span>
                     </button>
-                    <button onclick="abrirRendicion()" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex flex-col items-center justify-center text-[10px] leading-tight active:scale-95 transition p-1">
-                        <span class="text-base mb-0.5">📊</span>
-                        <span>Caja</span>
+                    <button onclick="abrirRendicion()" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex flex-col items-center justify-center text-[10px] p-1">
+                        <span class="text-base mb-0.5">📊</span><span>Caja</span>
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- MODAL DE COBRO INTELIGENTE -->
+        <!-- MODAL DE COBRO -->
         <div id="modal-cobro" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
                 <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">📝 Detalle de Venta y Visita</h3>
-                    <button onclick="cerrarModalCobro()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                    <h3 class="font-bold text-sm">📝 Detalle de Venta y Visita</h3>
+                    <button onclick="cerrarModalCobro()" class="text-slate-400 font-bold">✕</button>
                 </div>
-                
-                <div class="p-4 overflow-y-auto flex flex-col gap-3 text-xs">
-                    <div class="grid grid-cols-2 gap-2 bg-indigo-50 p-2.5 rounded-xl border border-indigo-100">
-                        <div>
-                            <span class="text-[10px] text-indigo-600 font-bold block">Fecha:</span>
-                            <span class="font-bold text-slate-800 text-xs" id="label-fecha-venta">--/--/----</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-indigo-600 font-bold block">Hora:</span>
-                            <span class="font-bold text-slate-800 text-xs" id="label-hora-venta">--:--</span>
-                        </div>
-                    </div>
-
+                <div class="p-4 flex flex-col gap-3 text-xs">
                     <div>
                         <label class="font-bold text-slate-700 block mb-1">Agencia:</label>
-                        <input list="lista-agencias" id="input-agencia" placeholder="Selecciona o escribe agencia..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <input list="lista-agencias" id="input-agencia" placeholder="Selecciona agencia..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
                         <datalist id="lista-agencias"></datalist>
                     </div>
-
                     <div>
-                        <label class="font-bold text-slate-700 block mb-1">Nombre del Guía:</label>
-                        <input list="lista-guias" id="input-guia" placeholder="Selecciona o escribe guía..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                        <label class="font-bold text-slate-700 block mb-1">Guía:</label>
+                        <input list="lista-guias" id="input-guia" placeholder="Selecciona guía..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
                         <datalist id="lista-guias"></datalist>
                     </div>
-
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="font-bold text-slate-700 block mb-1">Cant. Personas:</label>
-                            <input type="number" id="input-cant-personas" min="1" value="1" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                            <label class="font-bold text-slate-700 block mb-1">Pax:</label>
+                            <input type="number" id="input-cant-personas" min="1" value="1" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
                         </div>
                         <div>
-                            <label class="font-bold text-slate-700 block mb-1">Precio Unitario ($):</label>
-                            <input type="number" id="input-precio-unitario" min="0" value="0" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none focus:border-indigo-600 font-medium">
+                            <label class="font-bold text-slate-700 block mb-1">Precio Unit.:</label>
+                            <input type="number" id="input-precio-unitario" min="0" value="0" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
                         </div>
                     </div>
-
-                    <div class="bg-indigo-50 border border-indigo-100 p-2.5 rounded-xl flex justify-between items-center mt-1">
-                        <span class="text-indigo-900 font-bold">Total Visita Calculado:</span>
+                    <div class="bg-indigo-50 p-2.5 rounded-xl flex justify-between items-center">
+                        <span class="text-indigo-900 font-bold">Total Calculado:</span>
                         <span class="text-lg font-black text-indigo-950" id="modal-total-calculado">$0</span>
                     </div>
                 </div>
-
                 <div class="p-3 bg-slate-50 border-t flex gap-2">
-                    <button onclick="cerrarModalCobro()" class="w-1/2 bg-slate-200 hover:bg-slate-300 font-bold py-2.5 rounded-xl text-xs text-slate-700">
-                        Cancelar
-                    </button>
-                    <button onclick="confirmarYProcesarVenta()" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow">
-                        ✅ Confirmar Cobro
-                    </button>
+                    <button onclick="cerrarModalCobro()" class="w-1/2 bg-slate-200 font-bold py-2 rounded-xl text-xs">Cancelar</button>
+                    <button onclick="confirmarYProcesarVenta()" class="w-1/2 bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs">Confirmar</button>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL DE RENDICIÓN Y INFORMES DINÁMICOS -->
+        <!-- MODAL CAJA -->
         <div id="modal-rendicion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">📊 Informes Dinámicos y Caja</h3>
-                    <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                    <h3 class="font-bold text-sm">📊 Rendición y Operaciones</h3>
+                    <button onclick="cerrarRendicion()" class="text-slate-400 font-bold">✕</button>
                 </div>
-                
                 <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
-                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl text-center">
-                        <span class="text-indigo-600 font-bold block uppercase text-[10px] tracking-wider">Total Recaudado</span>
+                    <div class="bg-indigo-50 p-3 rounded-xl text-center">
+                        <span class="text-indigo-600 font-bold block uppercase text-[10px]">Total Recaudado</span>
                         <span class="text-3xl font-extrabold text-indigo-950" id="rendicion-total-general">$0</span>
-                        <span class="block text-[10px] text-indigo-400 mt-1" id="rendicion-total-ops">0 operaciones registradas</span>
                     </div>
-
-                    <!-- MÓDULO DE INFORMES DINÁMICOS -->
-                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-emerald-900 text-xs flex items-center gap-1">📥 Exportar Reporte Unipauta Prolijo</h4>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Desde:</label>
-                                <input type="date" id="reporte-fecha-desde" onchange="generarPreviaInforme()" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Hasta:</label>
-                                <input type="date" id="reporte-fecha-hasta" onchange="generarPreviaInforme()" class="w-full bg-white border border-emerald-300 rounded-lg p-1.5 text-[11px] outline-none">
-                            </div>
-                        </div>
-
-                        <!-- PREVIA EN PANTALLA DE PRODUCTOS VENDIDOS -->
-                        <div id="previa-informe-productos" class="mt-1 max-h-28 overflow-y-auto bg-white border border-emerald-200 rounded-lg p-2 text-[10px]">
-                            <span class="text-slate-400 block text-center">Selecciona un rango para ver cantidades...</span>
-                        </div>
-
-                        <button onclick="exportarReporteExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition shadow text-xs mt-1">
-                            📊 Descargar Excel Unilinea (.csv)
-                        </button>
-                    </div>
-
                     <div>
-                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Recaudación por Vendedor</h4>
-                        <div class="flex flex-col gap-1.5" id="desglose-vendedores"></div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px] tracking-wider">Historial de Operaciones (Línea por Línea)</h4>
-                        <div class="max-h-36 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
+                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px]">Historial</h4>
+                        <div class="max-h-40 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
                     </div>
                 </div>
-
-                <div class="p-3 bg-slate-50 border-t flex gap-2">
-                    <button onclick="reiniciarCajaTurno()" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-xl text-xs hover:bg-red-200">
-                        Reiniciar Caja del Día
-                    </button>
+                <div class="p-3 bg-slate-50 border-t">
+                    <button onclick="reiniciarCajaTurno()" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-xl text-xs">Reiniciar Caja en Sheets</button>
                 </div>
             </div>
         </div>
 
-        <!-- MODAL EXCLUSIVO DE ADMINISTRADOR -->
+        <!-- MODAL ADMIN INVENTARIO -->
         <div id="modal-inventario" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm flex items-center gap-2">🔐 Panel de Administración y Stock</h3>
-                    <button onclick="cerrarModalInventario()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+                    <h3 class="font-bold text-sm">🔐 Administración Sheets</h3>
+                    <button onclick="cerrarModalInventario()" class="text-slate-400 font-bold">✕</button>
                 </div>
-                
                 <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
-                    
-                    <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-indigo-950 text-sm">📦 Reposición y Ajuste Manual</h4>
-                        <p class="text-slate-600 text-[11px]">Busca un producto para ingresar stock nuevo o corregir su inventario actual:</p>
-                        
-                        <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs font-bold outline-none">
-                            <option value="">-- Seleccionar Producto --</option>
+                    <div class="bg-indigo-50 p-3 rounded-xl flex flex-col gap-2">
+                        <h4 class="font-bold text-indigo-950 text-sm">📦 Reposición Rápida</h4>
+                        <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-white border p-2 rounded-lg font-bold">
+                            <option value="">-- Seleccionar --</option>
                         </select>
-
-                        <div id="panel-reposicion-detalle" class="hidden flex-col gap-2 pt-2 border-t border-indigo-200">
-                            <div class="flex justify-between items-center bg-white p-2 rounded-lg border">
-                                <span class="font-bold text-slate-700" id="repo-prod-nombre">--</span>
-                                <span class="text-xs bg-slate-100 text-slate-800 font-black px-2 py-1 rounded">Stock Actual: <b id="repo-prod-stock-actual">0</b></span>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Cantidad:</label>
-                                    <input type="number" id="input-cant-reposicion" min="1" value="10" class="w-full bg-white border border-indigo-300 rounded-lg p-2 text-xs font-bold outline-none">
-                                </div>
-                                <div class="flex items-end gap-1">
-                                    <button onclick="ejecutarAccionStock('SUMAR')" class="w-1/2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
-                                        ➕ Sumar
-                                    </button>
-                                    <button onclick="ejecutarAccionStock('FIJAR')" class="w-1/2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
-                                        ✏️ Fijar Exacto
-                                    </button>
-                                </div>
+                        <div id="panel-reposicion-detalle" class="hidden flex-col gap-2 pt-2 border-t">
+                            <span class="font-bold" id="repo-prod-nombre"></span>
+                            <div class="flex gap-2">
+                                <input type="number" id="input-cant-reposicion" value="10" class="w-1/2 border p-1.5 rounded">
+                                <button onclick="ejecutarAccionStock('SUMAR')" class="w-1/2 bg-emerald-600 text-white font-bold py-1.5 rounded">Sumar Stock</button>
                             </div>
                         </div>
                     </div>
-
-                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-slate-800 text-xs">✨ Carga Masiva desde Excel</h4>
-                        <textarea id="textarea-excel" rows="3" placeholder="Pega aquí las columnas copiadas desde Excel..." 
-                            class="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs outline-none focus:border-indigo-600 font-mono"></textarea>
-                        <button onclick="importarDesdeTextoExcel()" id="btn-importar" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2 rounded-xl shadow transition text-center text-xs">
-                            🚀 Importar Inventario Completo
-                        </button>
+                    <div class="bg-slate-50 p-3 rounded-xl flex flex-col gap-2">
+                        <h4 class="font-bold text-slate-800 text-xs">✨ Importar desde Excel</h4>
+                        <textarea id="textarea-excel" rows="3" placeholder="Pega tu Excel aquí..." class="w-full border p-2 font-mono"></textarea>
+                        <button onclick="importarDesdeTextoExcel()" class="bg-slate-800 text-white font-bold py-2 rounded">Subir a Sheets</button>
                     </div>
-
-                    <div class="bg-red-50 border border-red-200 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-red-800 text-xs">⚠️ Zona de Control Total</h4>
-                        <div class="grid grid-cols-2 gap-2">
-                            <button onclick="cargarCatalogoPredeterminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2 rounded-lg text-[10px]">
-                                Cargar Predeterminados
-                            </button>
-                            <button onclick="borrarTodaLaBaseDeDatos()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 rounded-lg text-[10px] transition shadow">
-                                🗑️ Borrar Catálogo
-                            </button>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- FIREBASE & LÓGICA JAVASCRIPT SEGURA -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, writeBatch, onSnapshot, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyATqzcROVxXUn8uZxhgQMtiF9JoOFXyZvk",
-            authDomain: "vinotecacatapanowines.firebaseapp.com",
-            projectId: "vinotecacatapanowines",
-            storageBucket: "vinotecacatapanowines.firebasestorage.app",
-            messagingSenderId: "505169331108",
-            appId: "1:505169331108:web:dce6a98aefe2b3dc8a7731"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyeYDOWsCNdp1CCqTr74h0idERGLksY7fsOSsmjxJxzYZmvxIymIAAXwQxvenARUFCv1A/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
         let carrito = [];
         let ventas = [];
-
-        let agenciasList = new Set([
-            "Sin Agencia", "Cepas", "Wanka", "Manso", "Grupo Sur", "Wine and Ride", 
-            "salvando distancias", "gora", "mancagua", "johana", "mayas", "cata", 
-            "PRIVADA", "cristo", "micro jujuy", "huentata", "rolsol", "saint germain", 
-            "viajes y diseños", "colectivo chaco Sukan", "sars", "punto de partida", 
-            "monmar", "amalaya", "rac", "kawak", "geovix", "mahuel", "lili colectivo", 
-            "whipala", "aymará", "wine transfer", "micro entre rios", "daymar", 
-            "micro cordoba", "micro ayh", "micro r v", "cuyo travel", "fase 2", 
-            "modo tours", "pasaporte", "campo base"
-        ]);
-
-        let guiasList = new Set([
-            "Sin Guía", "gastón", "Antonella", "Marita", "Priscilla", "Caro", "Mónica", 
-            "Sole", "Ramiro", "Valeria", "Yesica", "Noelia", "Ana", "Pamela", "Fernando", 
-            "Cintia", "Hernán", "Johanna", "Ornella", "Sebastián", "Lore", "Mario", 
-            "Sabrina", "romi", "cami", "alejandro", "analia", "juan", "silvio", 
-            "victoria", "aldo", "rubén", "mariano", "alejo", "aldana", "silvina", 
-            "emilia", "pablo", "germán", "rocío", "facundo", "dolores", "daniel", 
-            "juanpi", "federico", "ricardo", "juan pablo", "claudia", "fabri", 
-            "belén", "mercedes", "franco", "tony"
-        ]);
-
         let vendedorActual = "Vendedor 1";
         let categoriaSeleccionada = "TODAS";
         let productoSeleccionadoRepo = null;
 
         window.onload = async function() {
-            configurarScrollCategorias();
-            sincronizarConFirebase();
-
-            const hoy = new Date().toISOString().split('T')[0];
-            document.getElementById('reporte-fecha-desde').value = hoy;
-            document.getElementById('reporte-fecha-hasta').value = hoy;
-
-            document.getElementById('input-buscador').addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    let val = this.value.trim().toLowerCase();
-                    let coincidencia = catalogo.find(p => p.codigo.toLowerCase() === val || p.nombre.toLowerCase() === val);
-                    if (coincidencia) {
-                        agregarAlCarrito(coincidencia.id);
-                        limpiarBuscador();
-                    }
-                }
-            });
+            await sincronizarConSheets();
         };
 
-        function sincronizarConFirebase() {
-            onSnapshot(collection(db, "catalogo"), (snapshot) => {
-                catalogo = [];
-                snapshot.forEach((doc) => {
-                    catalogo.push({ id: doc.id, ...doc.data() });
-                });
+        async function sincronizarConSheets() {
+            try {
+                let res = await fetch(SHEETS_URL + "?action=obtenerTodo");
+                let data = await res.json();
+                catalogo = data.catalogo || [];
+                ventas = data.ventas || [];
                 renderizarCategorias();
                 renderizarCatalogo();
                 actualizarSelectReposicion();
-            });
+            } catch (err) {
+                console.error("Error sincronizando con Sheets:", err);
+            }
+        }
 
-            onSnapshot(collection(db, "ventas"), (snapshot) => {
-                ventas = [];
-                snapshot.forEach((doc) => {
-                    let vData = doc.data();
-                    ventas.push({ id: doc.id, ...vData });
-                    if (vData.agencia) agenciasList.add(vData.agencia);
-                    if (vData.guia) guiasList.add(vData.guia);
-                });
-                actualizarListasDesplegables();
-                generarPreviaInforme();
+        async function enviarA Sheets(payload) {
+            await fetch(SHEETS_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
             });
         }
 
         window.solicitarAccesoAdmin = function() {
-            let pinIngresado = prompt("🔒 Ingrese la contraseña de Administrador:");
-            if (pinIngresado === ADMIN_PIN) {
-                abrirModalInventario();
-            } else if (pinIngresado !== null) {
-                alert("❌ Contraseña incorrecta. Acceso denegado.");
-            }
-        }
-
-        function actualizarSelectReposicion() {
-            const select = document.getElementById('select-producto-reposicion');
-            if (!select) return;
-            select.innerHTML = `<option value="">-- Seleccionar Producto --</option>`;
-            catalogo.sort((a,b) => a.nombre.localeCompare(b.nombre)).forEach(p => {
-                select.innerHTML += `<option value="${p.id}">#${p.codigo} - ${p.nombre} (Stock: ${p.stock})</option>`;
-            });
-        }
-
-        window.seleccionarProductoReposicion = function(id) {
-            let panel = document.getElementById('panel-reposicion-detalle');
-            if (!id) {
-                panel.classList.add('hidden');
-                productoSeleccionadoRepo = null;
-                return;
-            }
-
-            productoSeleccionadoRepo = catalogo.find(p => p.id === id);
-            if (productoSeleccionadoRepo) {
-                document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
-                document.getElementById('repo-prod-stock-actual').innerText = productoSeleccionadoRepo.stock;
-                panel.classList.remove('hidden');
-                panel.classList.add('flex');
-            }
-        }
-
-        window.ejecutarAccionStock = async function(modo) {
-            if (!productoSeleccionadoRepo) return;
-
-            let cantInput = parseInt(document.getElementById('input-cant-reposicion').value);
-            if (isNaN(cantInput) || cantInput < 0) {
-                alert("Ingrese una cantidad válida.");
-                return;
-            }
-
-            let stockAnterior = productoSeleccionadoRepo.stock;
-            let stockNuevo = modo === 'SUMAR' ? stockAnterior + cantInput : cantInput;
-            let diferencia = stockNuevo - stockAnterior;
-
-            productoSeleccionadoRepo.stock = stockNuevo;
-
-            const batch = writeBatch(db);
-
-            let prodRef = doc(db, "catalogo", productoSeleccionadoRepo.id);
-            batch.set(prodRef, productoSeleccionadoRepo);
-
-            let ahora = new Date();
-            let logRef = doc(collection(db, "movimientos_stock"));
-            batch.set(logRef, {
-                fecha: ahora.toLocaleDateString(),
-                hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                productoId: productoSeleccionadoRepo.id,
-                productoNombre: productoSeleccionadoRepo.nombre,
-                codigo: productoSeleccionadoRepo.codigo,
-                tipoMovimiento: modo === 'SUMAR' ? 'REPOSICION' : 'AJUSTE_MANUAL',
-                cantidadModificada: diferencia,
-                stockAnterior: stockAnterior,
-                stockResultante: stockNuevo,
-                usuario: "Administrador",
-                timestamp: Date.now()
-            });
-
-            await batch.commit();
-
-            alert(`¡Stock actualizado! Nuevo stock de ${productoSeleccionadoRepo.nombre}: ${stockNuevo} unidades.`);
-            seleccionarProductoReposicion(productoSeleccionadoRepo.id);
-        }
-
-        function actualizarListasDesplegables() {
-            const listAgencias = document.getElementById('lista-agencias');
-            listAgencias.innerHTML = '';
-            Array.from(agenciasList).sort().forEach(ag => {
-                listAgencias.innerHTML += `<option value="${ag}">`;
-            });
-
-            const listGuias = document.getElementById('lista-guias');
-            listGuias.innerHTML = '';
-            Array.from(guiasList).sort().forEach(g => {
-                listGuias.innerHTML += `<option value="${g}">`;
-            });
-        }
-
-        function configurarScrollCategorias() {
-            const cont = document.getElementById('contenedor-categorias');
-            if (!cont) return;
-            cont.addEventListener('wheel', (evt) => {
-                evt.preventDefault();
-                cont.scrollLeft += evt.deltaY;
-            });
-        }
-
-        window.desplazarCategorias = function(distancia) {
-            const cont = document.getElementById('contenedor-categorias');
-            if (cont) cont.scrollBy({ left: distancia, behavior: 'smooth' });
+            let pin = prompt("🔒 PIN Administrador:");
+            if (pin === ADMIN_PIN) abrirModalInventario();
+            else if (pin !== null) alert("PIN incorrecto");
         }
 
         function renderizarCategorias() {
             const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
             const cont = document.getElementById('contenedor-categorias');
             cont.innerHTML = '';
-
             categorias.forEach(cat => {
-                const activa = cat === categoriaSeleccionada;
-                cont.innerHTML += `
-                    <button onclick="window.seleccionarCategoria('${cat}')" 
-                        class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300 hover:bg-indigo-800'}">
-                        ${cat}
-                    </button>
-                `;
+                let activa = cat === categoriaSeleccionada;
+                cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300'}">${cat}</button>`;
             });
         }
 
@@ -517,612 +233,179 @@
 
         function renderizarCatalogo() {
             const grilla = document.getElementById('grilla-productos');
-            const filtroTexto = document.getElementById('input-buscador').value.trim().toLowerCase();
             grilla.innerHTML = '';
-
-            let productosFiltrados = catalogo.filter(p => {
-                const coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
-                const coincideTexto = p.nombre.toLowerCase().includes(filtroTexto) || p.codigo.toLowerCase().includes(filtroTexto);
-                return coincideCat && coincideTexto;
-            });
-
-            document.getElementById('badge-contador').innerText = `${productosFiltrados.length} items`;
-
-            if (productosFiltrados.length === 0) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Catálogo vacío - Solicita acceso al Admin</span>`;
-                return;
-            }
-
-            productosFiltrados.forEach(prod => {
-                const esCombo = Boolean((prod.componentesStr && prod.componentesStr.trim() !== '') || prod.categoria.toLowerCase() === 'combos' || prod.nombre.toLowerCase().includes('combo'));
+            let filtrados = catalogo.filter(p => categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada);
+            document.getElementById('badge-contador').innerText = `${filtrados.length} items`;
+            
+            filtrados.forEach(prod => {
                 grilla.innerHTML += `
-                    <button onclick="window.agregarAlCarrito('${prod.id}')" 
-                        class="bg-white border ${esCombo ? 'border-amber-400 bg-amber-50/30' : 'border-slate-200'} p-2.5 rounded-xl shadow-sm hover:border-indigo-500 active:bg-indigo-50 flex flex-col text-left transition relative">
-                        <span class="absolute top-2 right-2 text-[10px] font-bold ${esCombo ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'} px-1.5 py-0.5 rounded">#${prod.codigo}</span>
-                        <span class="font-bold text-slate-800 text-xs pr-8 leading-snug">${prod.nombre}</span>
+                    <button onclick="agregarAlCarrito('${prod.id}')" class="bg-white border p-2.5 rounded-xl shadow-sm text-left flex flex-col relative">
+                        <span class="absolute top-2 right-2 text-[10px] bg-slate-100 px-1 rounded">#${prod.codigo}</span>
+                        <span class="font-bold text-xs pr-6">${prod.nombre}</span>
                         <div class="flex justify-between items-end mt-2">
-                            <span class="text-indigo-900 font-black text-sm">$${prod.precio.toLocaleString()}</span>
-                            <span class="text-[10px] text-slate-500">${esCombo ? '🎁 Combo' : 'Stock: ' + prod.stock}</span>
+                            <span class="text-indigo-900 font-black">$${prod.precio}</span>
+                            <span class="text-[10px] text-slate-500">Stock: ${prod.stock}</span>
                         </div>
-                    </button>
-                `;
+                    </button>`;
             });
-        }
-
-        window.filtrarCatalogo = function() {
-            renderizarCatalogo();
-        }
-
-        window.limpiarBuscador = function() {
-            document.getElementById('input-buscador').value = '';
-            renderizarCatalogo();
-            document.getElementById('input-buscador').focus();
-        }
-
-        window.cambiarVendedor = function(nombre) {
-            vendedorActual = nombre;
-            document.getElementById('vendedor-label').innerText = `Vendedor: ${vendedorActual}`;
-        }
-
-        function obtenerComponentesParseados(componentesStr) {
-            if (!componentesStr || !componentesStr.trim()) return [];
-            let partes = componentesStr.split(',');
-            let resultado = [];
-            partes.forEach(p => {
-                let [cod, cantStr] = p.split(':');
-                if (cod) {
-                    resultado.push({ codigo: cod.trim(), cant: parseInt(cantStr) || 1 });
-                }
-            });
-            return resultado;
         }
 
         window.agregarAlCarrito = function(id) {
-            const producto = catalogo.find(p => p.id === id);
-            if (!producto) return;
-
-            const esCombo = Boolean((producto.componentesStr && producto.componentesStr.trim() !== '') || producto.categoria.toLowerCase() === 'combos' || producto.nombre.toLowerCase().includes('combo'));
-
-            if (esCombo && producto.componentesStr && producto.componentesStr.trim() !== '') {
-                let componentes = obtenerComponentesParseados(producto.componentesStr);
-                for (let comp of componentes) {
-                    let prodIndividual = catalogo.find(p => p.codigo.toLowerCase() === comp.codigo.toLowerCase());
-                    if (!prodIndividual || prodIndividual.stock < comp.cant) {
-                        alert(`No hay stock suficiente de (${comp.codigo}) para armar el ${producto.nombre}`);
-                        return;
-                    }
-                }
-            } else if (!esCombo && producto.stock <= 0) {
-                alert("Sin stock disponible");
-                return;
-            }
-
-            const itemExistente = carrito.find(i => i.id === id);
-            if (itemExistente) {
-                itemExistente.cantidad++;
-            } else {
-                carrito.push({ ...producto, cantidad: 1 });
-            }
-
+            let prod = catalogo.find(p => p.id == id);
+            if (!prod || prod.stock <= 0) { alert("Sin stock"); return; }
+            let item = carrito.find(i => i.id == id);
+            if (item) item.cantidad++;
+            else carrito.push({...prod, cantidad: 1});
             renderizarCarrito();
         }
 
         window.agregarMontoLibre = function() {
-            let montoStr = prompt("Ingrese el monto a cobrar ($):", "");
-            if (!montoStr) return;
-            let monto = parseFloat(montoStr);
-            if (isNaN(monto) || monto <= 0) return;
-
-            carrito.push({
-                id: 'varios_' + Date.now(),
-                codigo: "VARIOS",
-                nombre: "Producto Varios",
-                precio: monto,
-                cantidad: 1,
-                esMontoLibre: true
-            });
-
-            renderizarCarrito();
-        }
-
-        window.modificarCantidad = function(id, cambio) {
-            const item = carrito.find(i => i.id === id);
-            if (!item) return;
-
-            item.cantidad += cambio;
-            if (item.cantidad <= 0) {
-                carrito = carrito.filter(i => i.id !== id);
-            }
-
+            let monto = parseFloat(prompt("Monto libre ($):"));
+            if (!monto || monto <= 0) return;
+            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
             renderizarCarrito();
         }
 
         function renderizarCarrito() {
             const cont = document.getElementById('contenedor-items-carrito');
-            const totalElemento = document.getElementById('total-carrito');
-            
-            if (carrito.length === 0) {
-                cont.innerHTML = `<span class="text-slate-400 text-center py-2 text-xs">Carrito vacío - Seleccione productos arriba</span>`;
-                totalElemento.innerText = '$0';
-                return;
-            }
-
             cont.innerHTML = '';
             let total = 0;
-
-            carrito.forEach(item => {
-                let subtotal = item.precio * item.cantidad;
-                total += subtotal;
-
-                cont.innerHTML += `
-                    <div class="flex justify-between items-center text-xs py-1 border-b border-slate-100 last:border-0">
-                        <div class="flex-1 pr-2">
-                            <span class="font-bold text-slate-800">${item.nombre}</span>
-                            <span class="text-[10px] text-slate-500 block">$${item.precio.toLocaleString()} c/u</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center bg-slate-200 rounded-lg font-bold">
-                                <button onclick="window.modificarCantidad('${item.id}', -1)" class="px-2 py-0.5 text-slate-600 hover:text-black">-</button>
-                                <span class="px-1 text-slate-800">${item.cantidad}</span>
-                                <button onclick="window.modificarCantidad('${item.id}', 1)" class="px-2 py-0.5 text-slate-600 hover:text-black">+</button>
-                            </div>
-                            <span class="font-black text-slate-900 w-14 text-right">$${subtotal.toLocaleString()}</span>
-                        </div>
-                    </div>
-                `;
+            carrito.forEach(i => {
+                total += i.precio * i.cantidad;
+                cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b"><span>${i.nombre} (x${i.cantidad})</span><b>$${i.precio * i.cantidad}</b></div>`;
             });
-
-            totalElemento.innerText = `$${total.toLocaleString()}`;
+            document.getElementById('total-carrito').innerText = `$${total}`;
         }
 
-        window.vaciarCarrito = function() {
-            carrito = [];
-            renderizarCarrito();
-        }
+        window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
         window.abrirModalCobro = function() {
-            if (carrito.length === 0) {
-                alert("El carrito está vacío. Agregue productos o una visita.");
-                return;
-            }
-
-            let ahora = new Date();
-            let fechaStr = ahora.toLocaleDateString();
-            let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            document.getElementById('label-fecha-venta').innerText = fechaStr;
-            document.getElementById('label-hora-venta').innerText = horaStr;
-            document.getElementById('input-cant-personas').value = 1;
-            document.getElementById('input-precio-unitario').value = 0;
-            document.getElementById('modal-total-calculado').innerText = '$0';
-
-            actualizarListasDesplegables();
+            if (carrito.length === 0) { alert("Carrito vacío"); return; }
             document.getElementById('modal-cobro').classList.remove('hidden');
         }
-
-        window.cerrarModalCobro = function() {
-            document.getElementById('modal-cobro').classList.add('hidden');
-        }
+        window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
 
         window.calcularTotalVisita = function() {
-            let cant = parseInt(document.getElementById('input-cant-personas').value) || 0;
-            let precioUnit = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            let total = cant * precioUnit;
-            document.getElementById('modal-total-calculado').innerText = `$${total.toLocaleString()}`;
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            document.getElementById('modal-total-calculado').innerText = `$${pax * precio}`;
         }
 
         window.confirmarYProcesarVenta = async function() {
-            let agencia = document.getElementById('input-agencia').value.trim() || "Sin Agencia";
-            let guia = document.getElementById('input-guia').value.trim() || "Sin Guía";
-            let cantPersonas = parseInt(document.getElementById('input-cant-personas').value) || 1;
-            let precioUnitario = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            let totalVisita = cantPersonas * precioUnitario;
+            let agencia = document.getElementById('input-agencia').value || "Particular";
+            let guia = document.getElementById('input-guia').value || "Sin Guía";
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            let totalVisita = pax * precioU;
+            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
-            let totalCarritoProductos = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-            let totalVentaFinal = totalVisita > 0 ? (totalVisita + totalCarritoProductos) : totalCarritoProductos;
-
-            const batch = writeBatch(db);
-            let productosVendidosResumen = [];
-            let itemsEstructurados = [];
-            let ahora = new Date();
-
-            for (let itemCarrito of carrito) {
-                const esCombo = Boolean((itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') || itemCarrito.categoria.toLowerCase() === 'combos' || itemCarrito.nombre.toLowerCase().includes('combo'));
-
-                productosVendidosResumen.push(`${itemCarrito.nombre} (x${itemCarrito.cantidad})`);
-                itemsEstructurados.push({
-                    id: itemCarrito.id,
-                    nombre: itemCarrito.nombre,
-                    cantidad: itemCarrito.cantidad,
-                    precioUnitario: itemCarrito.precio,
-                    subtotal: itemCarrito.precio * itemCarrito.cantidad
-                });
-
-                if (esCombo && itemCarrito.componentesStr && itemCarrito.componentesStr.trim() !== '') {
-                    let componentes = obtenerComponentesParseados(itemCarrito.componentesStr);
-                    for (let comp of componentes) {
-                        let prodIndividual = catalogo.find(p => p.codigo.toLowerCase() === comp.codigo.toLowerCase());
-                        if (prodIndividual) {
-                            let cantTotalA_Descontar = comp.cant * itemCarrito.cantidad;
-                            let stockAnt = prodIndividual.stock;
-                            prodIndividual.stock -= cantTotalA_Descontar;
-                            
-                            let ref = doc(db, "catalogo", prodIndividual.id);
-                            batch.set(ref, prodIndividual);
-
-                            let logRef = doc(collection(db, "movimientos_stock"));
-                            batch.set(logRef, {
-                                fecha: ahora.toLocaleDateString(),
-                                hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                                productoId: prodIndividual.id,
-                                productoNombre: prodIndividual.nombre,
-                                codigo: prodIndividual.codigo,
-                                tipoMovimiento: 'VENTA_COMBO',
-                                cantidadModificada: -cantTotalA_Descontar,
-                                stockAnterior: stockAnt,
-                                stockResultante: prodIndividual.stock,
-                                usuario: vendedorActual,
-                                timestamp: Date.now()
-                            });
-                        }
-                    }
-                } else if (!itemCarrito.esMontoLibre) {
-                    let prod = catalogo.find(p => p.id === itemCarrito.id);
-                    if (prod) {
-                        let stockAnt = prod.stock;
-                        prod.stock -= itemCarrito.cantidad;
-                        let ref = doc(db, "catalogo", prod.id);
-                        batch.set(ref, prod);
-
-                        let logRef = doc(collection(db, "movimientos_stock"));
-                        batch.set(logRef, {
-                            fecha: ahora.toLocaleDateString(),
-                            hora: ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                            productoId: prod.id,
-                            productoNombre: prod.nombre,
-                            codigo: prod.codigo,
-                            tipoMovimiento: 'VENTA_DIRECTA',
-                            cantidadModificada: -itemCarrito.cantidad,
-                            stockAnterior: stockAnt,
-                            stockResultante: prod.stock,
-                            usuario: vendedorActual,
-                            timestamp: Date.now()
-                        });
-                    }
+            // Descontar stock localmente
+            carrito.forEach(item => {
+                if (!item.esMontoLibre) {
+                    let p = catalogo.find(x => x.id == item.id);
+                    if (p) p.stock -= item.cantidad;
                 }
-            }
+            });
 
-            let fechaISO = ahora.toISOString().split('T')[0];
-            let fechaStr = ahora.toLocaleDateString();
-            let horaStr = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            let nuevaVentaRef = doc(collection(db, "ventas"));
-            batch.set(nuevaVentaRef, {
-                fechaISO: fechaISO,
-                fecha: fechaStr,
-                hora: horaStr,
+            let ventaObj = {
+                id: 'v_' + Date.now(),
+                fecha: new Date().toLocaleDateString(),
+                hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                 vendedor: vendedorActual,
                 agencia: agencia,
                 guia: guia,
-                cantPersonas: cantPersonas,
-                precioUnitarioVisita: precioUnitario,
-                totalVisita: totalVisita,
-                totalProductos: totalCarritoProductos,
-                totalVenta: totalVentaFinal,
-                total: totalVentaFinal,
-                productosDetalle: productosVendidosResumen.join("; "),
-                itemsEstructurados: itemsEstructurados,
-                itemsCount: carrito.reduce((acc, i) => acc + i.cantidad, 0),
-                timestamp: Date.now()
-            });
+                cantPersonas: pax,
+                precioUnitario: precioU,
+                total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
+                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+            };
 
-            await batch.commit();
+            ventas.push(ventaObj);
+            await enviarASheets({action: "guardarVenta", venta: ventaObj});
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
+            alert("¡Venta registrada en Google Sheets!");
             cerrarModalCobro();
             vaciarCarrito();
             renderizarCatalogo();
-            limpiarBuscador();
-            alert("¡Venta registrada con éxito!");
         }
 
         window.abrirRendicion = function() {
             document.getElementById('modal-rendicion').classList.remove('hidden');
-            let totalGeneral = ventas.reduce((acc, v) => acc + v.total, 0);
-            document.getElementById('rendicion-total-general').innerText = `$${totalGeneral.toLocaleString()}`;
-            document.getElementById('rendicion-total-ops').innerText = `${ventas.length} operaciones registradas`;
-
-            const vendedores = ["Vendedor 1", "Vendedor 2", "Vendedor 3"];
-            const contDesglose = document.getElementById('desglose-vendedores');
-            contDesglose.innerHTML = '';
-
-            vendedores.forEach(v => {
-                let ventasVendedor = ventas.filter(op => op.vendedor === v);
-                let totalV = ventasVendedor.reduce((acc, op) => acc + op.total, 0);
-                contDesglose.innerHTML += `
-                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                        <span class="font-bold text-slate-700">${v}</span>
-                        <div class="text-right">
-                            <span class="font-black text-indigo-900 block">$${totalV.toLocaleString()}</span>
-                            <span class="text-[9px] text-slate-400">${ventasVendedor.length} ops</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            const contHistorial = document.getElementById('lista-historial-ventas');
-            contHistorial.innerHTML = '';
-            if (ventas.length === 0) {
-                contHistorial.innerHTML = `<span class="p-3 text-center block text-slate-400">Sin ventas registradas aún</span>`;
-            } else {
-                [...ventas].sort((a,b) => b.timestamp - a.timestamp).forEach(v => {
-                    contHistorial.innerHTML += `
-                        <div class="p-2 flex flex-col gap-0.5 border-b last:border-0 bg-slate-50/50 rounded-lg mb-1">
-                            <div class="flex justify-between items-center font-bold text-slate-800">
-                                <span>${v.agencia} (${v.guia})</span>
-                                <span class="text-emerald-600">$${v.total.toLocaleString()}</span>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-slate-500">
-                                <span>Pax: ${v.cantPersonas} • Items: ${v.productosDetalle || 'Solo Visita'}</span>
-                                <span>${v.hora}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            generarPreviaInforme();
-        }
-
-        // PREVIA DINÁMICA EN PANTALLA
-        window.generarPreviaInforme = function() {
-            let fechaDesde = document.getElementById('reporte-fecha-desde').value;
-            let fechaHasta = document.getElementById('reporte-fecha-hasta').value;
-            const cont = document.getElementById('previa-informe-productos');
-
-            if (!fechaDesde || !fechaHasta) return;
-
-            let fDesde = new Date(fechaDesde + 'T00:00:00').getTime();
-            let fHasta = new Date(fechaHasta + 'T23:59:59').getTime();
-
-            let ventasFiltradas = ventas.filter(v => (v.timestamp || 0) >= fDesde && (v.timestamp || 0) <= fHasta);
-
-            if (ventasFiltradas.length === 0) {
-                cont.innerHTML = `<span class="text-slate-400 block text-center">Sin ventas en este rango.</span>`;
-                return;
-            }
-
-            let acumulado = {};
-            ventasFiltradas.forEach(v => {
-                if (v.itemsEstructurados && v.itemsEstructurados.length > 0) {
-                    v.itemsEstructurados.forEach(item => {
-                        if (!acumulado[item.nombre]) acumulado[item.nombre] = { cant: 0, monto: 0 };
-                        acumulado[item.nombre].cant += item.cantidad;
-                        acumulado[item.nombre].monto += item.subtotal;
-                    });
-                } else if (v.productosDetalle) {
-                    let items = v.productosDetalle.split('; ');
-                    items.forEach(item => {
-                        let match = item.match(/(.+)\(x(\d+)\)/);
-                        let nom = match ? match[1].trim() : item;
-                        let cant = match ? parseInt(match[2]) : 1;
-                        if (!acumulado[nom]) acumulado[nom] = { cant: 0, monto: 0 };
-                        acumulado[nom].cant += cant;
-                    });
-                }
-            });
-
-            cont.innerHTML = `<div class="font-bold text-slate-700 mb-1 border-b pb-0.5">Resumen de Cantidades Vendidas:</div>`;
-            Object.entries(acumulado).sort((a,b) => b[1].cant - a[1].cant).forEach(([prod, data]) => {
-                cont.innerHTML += `
-                    <div class="flex justify-between py-0.5 border-b border-slate-100 last:border-0">
-                        <span class="truncate pr-2">${prod}</span>
-                        <span class="font-bold text-indigo-900 shrink-0">${data.cant} un. ${data.monto > 0 ? '($' + data.monto.toLocaleString() + ')' : ''}</span>
-                    </div>
-                `;
+            let totalGen = ventas.reduce((acc, v) => acc + Number(v.total), 0);
+            document.getElementById('rendicion-total-general').innerText = `$${totalGen}`;
+            let hist = document.getElementById('lista-historial-ventas');
+            hist.innerHTML = '';
+            ventas.slice().reverse().forEach(v => {
+                hist.innerHTML += `<div class="p-1 border-b"><b>${v.agencia}</b> - $${v.total} <br><small>${v.fecha} ${v.hora}</small></div>`;
             });
         }
+        window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
 
-        // EXPORTACIÓN EXCEL UNILÍNEA PROLIJA CON RESUMEN COMPLETO
-        window.exportarReporteExcel = function() {
-            let fechaDesde = document.getElementById('reporte-fecha-desde').value;
-            let fechaHasta = document.getElementById('reporte-fecha-hasta').value;
+        window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
+        window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
 
-            if (!fechaDesde || !fechaHasta) {
-                alert("Por favor selecciona las fechas del reporte.");
-                return;
-            }
-
-            let fDesde = new Date(fechaDesde + 'T00:00:00').getTime();
-            let fHasta = new Date(fechaHasta + 'T23:59:59').getTime();
-
-            let ventasFiltradas = ventas.filter(v => (v.timestamp || 0) >= fDesde && (v.timestamp || 0) <= fHasta);
-
-            if (ventasFiltradas.length === 0) {
-                alert("No se encontraron ventas en el periodo seleccionado.");
-                return;
-            }
-
-            let csvContent = "\uFEFF"; // BOM UTF-8 para Excel
-            
-            // HOJA 1 / SECCIÓN 1: OPERACIONES LÍNEA POR LÍNEA
-            csvContent += "REGISTRO DE VENTAS Y OPERACIONES (LÍNEA POR LÍNEA)\n";
-            csvContent += "Fecha,Hora,Vendedor,Agencia,Guia,Pax,Precio Unit. Visita,Total Visita ($),Total Productos ($),TOTAL OPERACION ($),Detalle Productos\n";
-
-            ventasFiltradas.sort((a,b) => a.timestamp - b.timestamp).forEach(v => {
-                let fila = [
-                    `"${v.fecha || ''}"`,
-                    `"${v.hora || ''}"`,
-                    `"${v.vendedor || ''}"`,
-                    `"${v.agencia || 'Sin Agencia'}"`,
-                    `"${v.guia || 'Sin Guia'}"`,
-                    v.cantPersonas || 1,
-                    v.precioUnitarioVisita || v.precioUnitario || 0,
-                    v.totalVisita || 0,
-                    v.totalProductos || 0,
-                    v.total || 0,
-                    `"${v.productosDetalle || 'Solo Visita'}"`
-                ].join(",");
-                csvContent += fila + "\n";
-            });
-
-            // HOJA 2 / SECCIÓN 2: RESUMEN ACUMULADO DE PRODUCTOS (CANTIDADES E IMPORTES)
-            let productosAcumulados = {};
-            let totalGeneralMontoProductos = 0;
-
-            ventasFiltradas.forEach(v => {
-                if (v.itemsEstructurados && v.itemsEstructurados.length > 0) {
-                    v.itemsEstructurados.forEach(item => {
-                        if (!productosAcumulados[item.nombre]) {
-                            productosAcumulados[item.nombre] = { cantidad: 0, montoTotal: 0 };
-                        }
-                        productosAcumulados[item.nombre].cantidad += item.cantidad;
-                        productosAcumulados[item.nombre].montoTotal += item.subtotal;
-                        totalGeneralMontoProductos += item.subtotal;
-                    });
-                } else if (v.productosDetalle) {
-                    let items = v.productosDetalle.split('; ');
-                    items.forEach(item => {
-                        let match = item.match(/(.+)\(x(\d+)\)/);
-                        let nombre = match ? match[1].trim() : item;
-                        let cant = match ? parseInt(match[2]) : 1;
-                        if (!productosAcumulados[nombre]) {
-                            productosAcumulados[nombre] = { cantidad: 0, montoTotal: 0 };
-                        }
-                        productosAcumulados[nombre].cantidad += cant;
-                    });
-                }
-            });
-
-            csvContent += "\n\n";
-            csvContent += "RESUMEN CONSOLIDADO DE PRODUCTOS VENDIDOS (INVENTARIO SALIENTE)\n";
-            csvContent += "Producto / Articulo,Cantidad Total Vendida,Monto Recaudado ($)\n";
-
-            Object.entries(productosAcumulados).sort((a,b) => b[1].cantidad - a[1].cantidad).forEach(([prod, data]) => {
-                csvContent += `"${prod}",${data.cantidad},${data.montoTotal}\n`;
-            });
-
-            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            let link = document.createElement("a");
-            let url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Informe_Ventas_y_Productos_${fechaDesde}_al_${fechaHasta}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function actualizarSelectReposicion() {
+            let sel = document.getElementById('select-producto-reposicion');
+            sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+            catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
         }
 
-        window.cerrarRendicion = function() {
-            document.getElementById('modal-rendicion').classList.add('hidden');
-        }
-
-        window.reiniciarCajaTurno = async function() {
-            if (confirm("¿Está seguro de reiniciar la caja y borrar las ventas?")) {
-                const querySnapshot = await getDocs(collection(db, "ventas"));
-                const batch = writeBatch(db);
-                querySnapshot.forEach((d) => batch.delete(d.ref));
-                await batch.commit();
-                abrirRendicion();
+        window.seleccionarProductoReposicion = function(id) {
+            productoSeleccionadoRepo = catalogo.find(p => p.id == id);
+            if (productoSeleccionadoRepo) {
+                document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
+                document.getElementById('panel-reposicion-detalle').classList.remove('hidden');
+                document.getElementById('panel-reposicion-detalle').classList.add('flex');
             }
         }
 
-        window.abrirModalInventario = function() {
-            document.getElementById('modal-inventario').classList.remove('hidden');
-        }
-
-        window.cerrarModalInventario = function() {
-            document.getElementById('modal-inventario').classList.add('hidden');
-        }
-
-        window.borrarTodaLaBaseDeDatos = async function() {
-            if (confirm("⚠️ ¿Estás 100% seguro de borrar TODO el catálogo?")) {
-                try {
-                    const querySnapshot = await getDocs(collection(db, "catalogo"));
-                    const batch = writeBatch(db);
-                    querySnapshot.forEach((d) => batch.delete(d.ref));
-                    await batch.commit();
-                    alert("¡Catálogo limpiado con éxito!");
-                    cerrarModalInventario();
-                } catch (error) {
-                    console.error("Error al borrar:", error);
-                }
-            }
+        window.ejecutarAccionStock = async function() {
+            if (!productoSeleccionadoRepo) return;
+            let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
+            productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+            alert("Stock actualizado en Sheets");
+            actualizarSelectReposicion();
+            renderizarCatalogo();
         }
 
         window.importarDesdeTextoExcel = async function() {
-            const texto = document.getElementById('textarea-excel').value;
-            if (!texto || !texto.trim()) {
-                alert("Por favor, pega la información copiada desde Excel.");
-                return;
-            }
-
-            const btn = document.getElementById('btn-importar');
-            btn.innerText = "⏳ Procesando...";
-            btn.disabled = true;
-
-            const lineas = texto.split('\n');
-            let productosValidos = [];
-
-            lineas.forEach((linea, index) => {
-                if (!linea.trim()) return;
-                const cols = linea.split('\t');
-                
-                if (index === 0 && cols[0].toLowerCase().includes('codigo')) return;
-
+            let texto = document.getElementById('textarea-excel').value;
+            if (!texto) return;
+            let lineas = texto.split('\n');
+            catalogo = [];
+            lineas.forEach((l, idx) => {
+                let cols = l.split('\t');
                 if (cols.length >= 4) {
-                    productosValidos.push({
-                        codigo: cols[0] ? cols[0].trim() : String(index),
-                        nombre: cols[1] ? cols[1].trim() : 'Sin nombre',
-                        categoria: cols[2] ? cols[2].trim() : 'General',
-                        precio: cols[3] ? parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0 : 0,
-                        stock: cols[4] ? parseInt(cols[4].trim()) || 0 : 0,
+                    catalogo.push({
+                        id: 'p_' + (Date.now() + idx),
+                        codigo: cols[0].trim(),
+                        nombre: cols[1].trim(),
+                        categoria: cols[2].trim(),
+                        precio: parseFloat(cols[3].trim()) || 0,
+                        stock: parseInt(cols[4].trim()) || 0,
                         componentesStr: cols[5] ? cols[5].trim() : ''
                     });
                 }
             });
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+            alert("¡Inventario importado con éxito a Google Sheets!");
+            renderizarCatalogo();
+            actualizarSelectReposicion();
+            cerrarModalInventario();
+        }
 
-            try {
-                const tamanoBloque = 20;
-                for (let i = 0; i < productosValidos.length; i += tamanoBloque) {
-                    let bloque = productosValidos.slice(i, i + tamanoBloque);
-                    const batch = writeBatch(db);
-
-                    bloque.forEach((prod, idx) => {
-                        let idGenerado = 'prod_' + (Date.now() + i + idx);
-                        let ref = doc(db, "catalogo", idGenerado);
-                        batch.set(ref, prod);
-                    });
-
-                    await batch.commit();
-                }
-
-                alert(`¡Éxito! Se cargaron ${productosValidos.length} ítems correctamente.`);
-                document.getElementById('textarea-excel').value = '';
-                cerrarModalInventario();
-            } catch (error) {
-                console.error("Error al importar:", error);
-            } finally {
-                btn.innerText = "🚀 Importar Inventario";
-                btn.disabled = false;
+        window.reiniciarCajaTurno = async function() {
+            if (confirm("¿Reiniciar todas las ventas en Google Sheets?")) {
+                ventas = [];
+                await enviarASheets({action: "reiniciarVentas"});
+                abrirRendicion();
             }
         }
 
-        window.cargarCatalogoPredeterminado = async function() {
-            const CATALOGO_INICIAL = [
-                { id: "1", codigo: "101", nombre: "Vela Chica", categoria: "Velas", precio: 500, stock: 150, componentesStr: "" },
-                { id: "2", codigo: "102", nombre: "Vela Grande", categoria: "Velas", precio: 1200, stock: 80, componentesStr: "" },
-                { id: "3", codigo: "103", nombre: "Rosario Madera", categoria: "Rosarios", precio: 2500, stock: 45, componentesStr: "" },
-                { id: "4", codigo: "104", nombre: "Estampita Medalla", categoria: "Santería", precio: 800, stock: 200, componentesStr: "" },
-                { id: "5", codigo: "201", nombre: "Combo 1 (Vela + Rosario)", categoria: "Combos", precio: 2800, stock: 0, componentesStr: "101:1, 103:1" }
-            ];
-
-            const batch = writeBatch(db);
-            CATALOGO_INICIAL.forEach(prod => {
-                batch.set(doc(db, "catalogo", prod.id), prod);
-            });
-            await batch.commit();
-            alert("Catálogo predeterminado cargado en la nube.");
-            cerrarModalInventario();
-        }
+        window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
+        window.limpiarBuscador = function() { document.getElementById('input-buscador').value = ''; renderizarCatalogo(); }
     </script>
 </body>
 </html>
