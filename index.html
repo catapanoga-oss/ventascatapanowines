@@ -194,7 +194,7 @@
 
     <!-- CÓDIGO JAVASCRIPT -->
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx42CwoUI1mWWuLsRh1OCejlKa9rDuhc_02CcRdcSywWvpgdUQr6p2wPvqlOXvjn12Miw/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyVrnYc0W5Nqb6GLkmZ4q_QtMXZ20bnBu1u_yaCKh3i8unEPIfHnx1myfhXcuQil9IUdg/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
@@ -363,12 +363,19 @@
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
+            // Procesar cada producto del carrito y auditar el stock
             for (let item of carrito) {
                 if (!item.esMontoLibre) {
                     let p = catalogo.find(x => x.id == item.id);
                     if (p) {
-                        p.stock = Number(p.stock) - Number(item.cantidad);
+                        let stockAntes = Number(p.stock) || 0;
+                        let cantidadVendida = Number(item.cantidad);
+                        let stockDespues = stockAntes - cantidadVendida;
                         
+                        // Actualizar stock en memoria
+                        p.stock = stockDespues;
+
+                        // Registrar en movimientos_stock enviando el balance detallado
                         await enviarASheets({
                             action: "registrarMovimiento",
                             movimiento: {
@@ -377,7 +384,9 @@
                                 hora: horaActual,
                                 tipo: "VENTA",
                                 producto: item.nombre,
-                                cantidad: -item.cantidad,
+                                cantidad: -cantidadVendida,
+                                stockPrevio: stockAntes,
+                                stockResultante: stockDespues,
                                 usuario: vendedorActual
                             }
                         });
@@ -402,7 +411,7 @@
             await enviarASheets({action: "guardarVenta", venta: ventaObj});
             await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-            alert("¡Venta y movimientos de stock registrados en Google Sheets!");
+            alert("¡Venta registrada y stock actualizado en Google Sheets!");
             cerrarModalCobro();
             vaciarCarrito();
             renderizarCatalogo();
@@ -444,11 +453,18 @@
         window.ejecutarAccionStock = async function() {
             if (!productoSeleccionadoRepo) return;
             let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
-            productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
+            if (cant <= 0) { alert("Ingresa una cantidad válida"); return; }
+
+            let stockAntes = Number(productoSeleccionadoRepo.stock) || 0;
+            let stockDespues = stockAntes + cant;
+            
+            // Actualizar en memoria
+            productoSeleccionadoRepo.stock = stockDespues;
             
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
+            // Registrar reposición en movimientos_stock con auditoría
             await enviarASheets({
                 action: "registrarMovimiento",
                 movimiento: {
@@ -458,12 +474,14 @@
                     tipo: "REPOSICION",
                     producto: productoSeleccionadoRepo.nombre,
                     cantidad: cant,
+                    stockPrevio: stockAntes,
+                    stockResultante: stockDespues,
                     usuario: vendedorActual
                 }
             });
 
             await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-            alert("Stock y movimientos actualizados en Google Sheets");
+            alert("¡Stock repuesto correctamente!");
             actualizarSelectReposicion();
             renderizarCatalogo();
         }
