@@ -349,56 +349,92 @@
         }
 
         window.confirmarYProcesarVenta = async function() {
-            let agencia = document.getElementById('input-agencia').value || "Particular";
-            let guia = document.getElementById('input-guia').value || "Sin Guía";
-            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            let totalVisita = pax * precioU;
-            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+    let agencia = document.getElementById('input-agencia').value || "Particular";
+    let guia = document.getElementById('input-guia').value || "Sin Guía";
+    let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+    let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+    let totalVisita = pax * precioU;
+    let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
-            let fechaActual = new Date().toLocaleDateString();
-            let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    let fechaActual = new Date().toLocaleDateString();
+    let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Envia salidas a movimientos_stock (deja intacta la pestaña catalogo)
-            for (let item of carrito) {
-                if (!item.esMontoLibre) {
+    // Recorrer los items comprados
+    for (let item of carrito) {
+        if (!item.esMontoLibre) {
+            
+            // VERIFICAR SI EL ITEM ES UN COMBO (tiene componentesStr)
+            if (item.componentesStr && item.componentesStr.trim() !== "") {
+                // Desglosar los componentes (ej: "101:2,102:1")
+                let listaComponentes = item.componentesStr.split(',');
+                
+                for (let comp of listaComponentes) {
+                    let partes = comp.split(':');
+                    let codComponente = partes[0].trim();
+                    let cantPorCombo = parseInt(partes[1]) || 1;
+                    
+                    // Calcular cantidad total a descontar (unidades del combo x cantidad de combos comprados)
+                    let cantTotalDescontar = cantPorCombo * Number(item.cantidad);
+                    
+                    // Buscar el nombre del producto individual para que quede lindo en la auditoría
+                    let prodIndividual = catalogo.find(p => String(p.codigo) === String(codComponente));
+                    let nombreProd = prodIndividual ? prodIndividual.nombre : "Componente " + codComponente;
+
+                    // Enviar movimiento individual por cada componente del combo
                     await enviarASheets({
                         action: "registrarMovimiento",
                         movimiento: {
                             id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
                             fecha: fechaActual,
                             hora: horaActual,
-                            tipo: "VENTA",
-                            codigo_producto: item.codigo,
-                            producto: item.nombre,
-                            cantidad: -Number(item.cantidad),
+                            tipo: "VENTA_COMBO",
+                            codigo_producto: codComponente,
+                            producto: nombreProd + " (vía " + item.nombre + ")",
+                            cantidad: -cantTotalDescontar,
                             usuario: vendedorActual
                         }
                     });
                 }
+            } else {
+                // ES UN PRODUCTO INDIVIDUAL NORMAL
+                await enviarASheets({
+                    action: "registrarMovimiento",
+                    movimiento: {
+                        id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
+                        fecha: fechaActual,
+                        hora: horaActual,
+                        tipo: "VENTA",
+                        codigo_producto: item.codigo,
+                        producto: item.nombre,
+                        cantidad: -Number(item.cantidad),
+                        usuario: vendedorActual
+                    }
+                });
             }
-
-            let ventaObj = {
-                id: 'v_' + Date.now(),
-                fecha: fechaActual,
-                hora: horaActual,
-                vendedor: vendedorActual,
-                agencia: agencia,
-                guia: guia,
-                cantPersonas: pax,
-                precioUnitario: precioU,
-                total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
-                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
-            };
-
-            ventas.push(ventaObj);
-            await enviarASheets({action: "guardarVenta", venta: ventaObj});
-
-            alert("¡Venta registrada con éxito!");
-            cerrarModalCobro();
-            vaciarCarrito();
-            await sincronizarConSheets();
         }
+    }
+
+    let ventaObj = {
+        id: 'v_' + Date.now(),
+        fecha: fechaActual,
+        hora: horaActual,
+        vendedor: vendedorActual,
+        agencia: agencia,
+        guia: guia,
+        cantPersonas: pax,
+        precioUnitario: precioU,
+        total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
+        productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+    };
+
+    ventas.push(ventaObj);
+    await enviarASheets({action: "guardarVenta", venta: ventaObj});
+
+    alert("¡Venta registrada! Los insumos y combos fueron descontados del stock.");
+    cerrarModalCobro();
+    vaciarCarrito();
+    await sincronizarConSheets();
+}
 
         window.abrirRendicion = function() {
             document.getElementById('modal-rendicion').classList.remove('hidden');
