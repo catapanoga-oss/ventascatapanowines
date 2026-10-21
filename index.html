@@ -1,4 +1,18 @@
-<script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Sistema de Ventas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+    <!-- Aquí va toda la estructura visual HTML (HEADER, MAIN, MODALES, ETC.) -->
+
+    <!-- CÓDIGO JAVASCRIPT (Justo antes de cerrar </body>) -->
+    <script>
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx42CwoUI1mWWuLsRh1OCejlKa9rDuhc_02CcRdcSywWvpgdUQr6p2wPvqlOXvjn12Miw/exec";
     const ADMIN_PIN = "1234";
 
@@ -311,4 +325,7 @@
     }
 
     window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
-</script>
+
+    </script>
+</body>
+</html>
