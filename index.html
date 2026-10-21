@@ -57,7 +57,7 @@
             <span id="badge-contador" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">0 items</span>
         </div>
 
-        <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[42vh] pr-1">
+        <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[40vh] pr-1">
             <div class="col-span-2 text-center text-slate-400 py-8 text-xs">
                 ⏳ Cargando datos desde Google Sheets...
             </div>
@@ -67,7 +67,7 @@
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col gap-2 shadow-xl flex-1 justify-between">
             <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                 <span class="font-bold text-xs text-slate-200 flex items-center">
-                    <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Carrito Actual
+                    <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Carrito Actual y Medios de Pago por Ítem
                 </span>
                 <div class="flex gap-2">
                     <button onclick="agregarMontoLibre()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2 py-0.5 rounded transition">+ Monto Libre</button>
@@ -75,8 +75,8 @@
                 </div>
             </div>
 
-            <!-- DETALLE DE ITEMS -->
-            <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[18vh] space-y-1 my-1 pr-1 text-xs">
+            <!-- DETALLE DE ITEMS CON SELECTOR DE PAGO -->
+            <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[22vh] space-y-2 my-1 pr-1 text-xs">
                 <span class="text-center text-slate-500 block py-3 italic">Carrito vacío. Haz clic en un producto para agregarlo.</span>
             </div>
 
@@ -87,71 +87,49 @@
                     <span id="total-carrito" class="text-xl font-black text-emerald-400 leading-none">$0</span>
                 </div>
                 <button onclick="abrirModalCobro()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-2">
-                    <span>COBRAR</span>
+                    <span>FINALIZAR COBRO</span>
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </div>
         </div>
     </main>
 
-    <!-- MODAL DE COBRO Y PAGOS MIXTOS -->
+    <!-- MODAL DE COBRO Y DATOS DE VISITA -->
     <div id="modal-cobro" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-md flex flex-col gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">💳 Cierre de Venta y Formas de Pago</h3>
+                <h3 class="font-bold text-sm text-white">📋 Datos de Visita y Cierre</h3>
                 <button onclick="cerrarModalCobro()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
 
             <div class="space-y-2 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1">Agencia / Nombre:</label>
+                    <input type="text" id="input-agencia" placeholder="Particular, Turisbus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1">Guía a cargo:</label>
+                    <input type="text" id="input-guia" placeholder="Nombre del guía..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
+                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-slate-400 block mb-1">Agencia / Nombre:</label>
-                        <input type="text" id="input-agencia" placeholder="Particular..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="text-slate-400 block mb-1">Guía a cargo:</label>
-                        <input type="text" id="input-guia" placeholder="Nombre del guía..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2 bg-slate-900/40 p-2 rounded-xl border border-slate-700/50">
-                    <div>
-                        <label class="text-slate-400 block mb-1">Cant. Pax (Personas):</label>
-                        <input type="number" id="input-cant-personas" oninput="calcularTotalVisita()" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center">
+                        <label class="text-slate-400 block mb-1">Cant. Pax:</label>
+                        <input type="number" id="input-cant-personas" oninput="calcularTotalVisita()" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center">
                     </div>
                     <div>
                         <label class="text-slate-400 block mb-1">Precio x Pax ($):</label>
-                        <input type="number" id="input-precio-unitario" oninput="calcularTotalVisita()" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center">
+                        <input type="number" id="input-precio-unitario" oninput="calcularTotalVisita()" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-center">
                     </div>
                 </div>
-
-                <!-- RESUMEN TOTAL A PAGAR -->
                 <div class="bg-indigo-950/40 border border-indigo-800/50 p-2.5 rounded-xl flex justify-between items-center">
-                    <span class="text-indigo-300 font-bold">Total General a Cobrar:</span>
-                    <span id="modal-total-general-cobro" class="text-base font-black text-indigo-400">$0</span>
-                </div>
-
-                <!-- DESGLOSE DE PAGOS MIXTOS -->
-                <span class="font-bold text-slate-300 block pt-1">Distribución del Pago:</span>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Efectivo ($)</label>
-                        <input type="number" id="pago-efectivo" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Tarjeta ($)</label>
-                        <input type="number" id="pago-tarjeta" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">Mercado Pago ($)</label>
-                        <input type="number" id="pago-mp" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
-                    </div>
+                    <span class="text-indigo-300 font-bold">Gran Total a Pagar:</span>
+                    <span id="modal-total-general-cobro" class="text-base font-black text-emerald-400">$0</span>
                 </div>
             </div>
 
             <div class="flex gap-2 pt-2 border-t border-slate-700">
-                <button onclick="cerrarModalCobro()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 rounded-xl font-bold transition">Cancelar</button>
-                <button onclick="confirmarYProcesarVenta()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-lg">💳 Procesar y Cobrar</button>
+                <button onclick="cerrarModalCobro()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 rounded-xl font-bold transition">Volver</button>
+                <button onclick="confirmarYProcesarVenta()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-lg">🚀 Registrar Venta</button>
             </div>
         </div>
     </div>
@@ -305,7 +283,6 @@
             }
 
             filtrados.forEach(prod => {
-                // Toma stock_actual directo de Google Sheets
                 let stockDisponible = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
                 grilla.innerHTML += `
                     <button onclick="agregarAlCarrito('${prod.id}')" class="bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left flex flex-col relative hover:border-indigo-500 transition active:scale-95">
@@ -332,15 +309,18 @@
             if (!prod || stockDisponible <= 0) { alert("Sin stock disponible"); return; }
             
             let item = carrito.find(i => i.id == id);
-            if (item) item.cantidad++;
-            else carrito.push({...prod, stock_actual: stockDisponible, cantidad: 1});
+            if (item) {
+                item.cantidad++;
+            } else {
+                carrito.push({...prod, stock_actual: stockDisponible, cantidad: 1, medioPago: "Efectivo"});
+            }
             renderizarCarrito();
         }
 
         window.agregarMontoLibre = function() {
             let monto = parseFloat(prompt("Monto libre ($):"));
             if (!monto || monto <= 0) return;
-            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
+            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true, medioPago: "Efectivo"});
             renderizarCarrito();
         }
 
@@ -349,11 +329,35 @@
             if (!cont) return;
             cont.innerHTML = '';
             let total = 0;
-            carrito.forEach(i => {
-                total += i.precio * i.cantidad;
-                cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b border-slate-700"><span>${i.nombre} (x${i.cantidad})</span><b>$${(i.precio * i.cantidad).toLocaleString()}</b></div>`;
+            
+            carrito.forEach((i, index) => {
+                let subtotal = i.precio * i.cantidad;
+                total += subtotal;
+                
+                cont.innerHTML += `
+                    <div class="bg-slate-900/60 p-2 rounded-xl border border-slate-700/60 flex flex-col gap-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-200">${i.nombre} (x${i.cantidad})</span>
+                            <span class="font-black text-indigo-400">$${subtotal.toLocaleString()}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1 border-t border-slate-800">
+                            <span class="text-[10px] text-slate-400">Medio de Pago:</span>
+                            <select onchange="actualizarMedioPago(${index}, this.value)" class="bg-slate-800 border border-slate-700 text-[11px] text-emerald-400 font-bold rounded px-2 py-0.5 focus:outline-none focus:border-indigo-500">
+                                <option value="Efectivo" ${i.medioPago === 'Efectivo' ? 'selected' : ''}>💵 Efectivo</option>
+                                <option value="Tarjeta" ${i.medioPago === 'Tarjeta' ? 'selected' : ''}>💳 Tarjeta</option>
+                                <option value="Mercado Pago" ${i.medioPago === 'Mercado Pago' ? 'selected' : ''}>📱 Mercado Pago</option>
+                            </select>
+                        </div>
+                    </div>`;
             });
+            
             document.getElementById('total-carrito').innerText = `$${total.toLocaleString()}`;
+        }
+
+        window.actualizarMedioPago = function(index, medio) {
+            if (carrito[index]) {
+                carrito[index].medioPago = medio;
+            }
         }
 
         window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
@@ -372,11 +376,6 @@
 
             document.getElementById('modal-cobro').classList.remove('hidden');
             document.getElementById('modal-total-general-cobro').innerText = `$${granTotal.toLocaleString()}`;
-            
-            // Sugerir el pago completo en efectivo por defecto
-            document.getElementById('pago-efectivo').value = granTotal;
-            document.getElementById('pago-tarjeta').value = 0;
-            document.getElementById('pago-mp').value = 0;
         }
 
         window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
@@ -389,7 +388,6 @@
             let granTotal = totalVisita > 0 ? totalVisita + totalProd : totalProd;
             
             document.getElementById('modal-total-general-cobro').innerText = `$${granTotal.toLocaleString()}`;
-            document.getElementById('pago-efectivo').value = granTotal;
         }
 
         window.confirmarYProcesarVenta = async function() {
@@ -401,22 +399,27 @@
             let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
             let granTotal = totalVisita > 0 ? totalVisita + totalProd : totalProd;
 
-            // Obtener montos desglosados por pago
-            let pagoEfe = parseFloat(document.getElementById('pago-efectivo').value) || 0;
-            let pagoTar = parseFloat(document.getElementById('pago-tarjeta').value) || 0;
-            let pagoMp = parseFloat(document.getElementById('pago-mp').value) || 0;
-            let sumaPagos = pagoEfe + pagoTar + pagoMp;
+            // Calcular totales separados por medio de pago según lo elegido en cada ítem
+            let pagoEfe = 0;
+            let pagoTar = 0;
+            let pagoMp = 0;
 
-            // Validar coherencia del monto a cobrar
-            if (Math.abs(sumaPagos - granTotal) > 1) {
-                alert(`⚠️ La suma de los pagos ($${sumaPagos.toLocaleString()}) no coincide con el total a cobrar ($${granTotal.toLocaleString()}). Revisa los montos.`);
-                return;
+            carrito.forEach(i => {
+                let sub = i.precio * i.cantidad;
+                if (i.medioPago === "Efectivo") pagoEfe += sub;
+                else if (i.medioPago === "Tarjeta") pagoTar += sub;
+                else if (i.medioPago === "Mercado Pago") pagoMp += sub;
+            });
+
+            // Si hay entradas de visita, por defecto las sumamos al efectivo o las dejamos integradas
+            if (totalVisita > 0) {
+                pagoEfe += totalVisita; 
             }
 
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Recorrer carrito para registrar salidas (Desglosando COMBOS o Productos individuales)
+            // Registrar salidas de stock y movimientos por cada producto/combo
             for (let item of carrito) {
                 if (!item.esMontoLibre) {
                     if (item.componentesStr && item.componentesStr.trim() !== "") {
@@ -462,7 +465,7 @@
                 }
             }
 
-            // Registrar objeto de venta con distribución de pagos
+            // Registrar la venta con los montos distribuidos automáticamente según lo seleccionado en cada ítem
             let ventaObj = {
                 id: 'v_' + Date.now(),
                 fecha: fechaActual,
@@ -476,7 +479,7 @@
                 pagoEfectivo: pagoEfe,
                 pagoTarjeta: pagoTar,
                 pagoMercadoPago: pagoMp,
-                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join("; ")
             };
 
             ventas.push(ventaObj);
