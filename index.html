@@ -2,330 +2,507 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>POS Sistema de Ventas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between select-none">
 
-    <!-- Aquí va toda la estructura visual HTML (HEADER, MAIN, MODALES, ETC.) -->
+    <!-- HEADER / BARRA SUPERIOR -->
+    <header class="bg-slate-800 border-b border-slate-700 p-3 flex justify-between items-center shadow-lg">
+        <div class="flex items-center space-x-2">
+            <div class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-lg shadow">
+                <i class="fa-solid fa-cash-register text-xs"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm leading-none text-white">Punto de Venta</h1>
+                <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Vendedor 1</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="abrirRendicion()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center shadow transition active:scale-95">
+                <i class="fa-solid fa-receipt mr-1.5"></i> Caja / Rendición
+            </button>
+            <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs p-2 rounded-lg transition active:scale-95" title="Administración">
+                🔐
+            </button>
+        </div>
+    </header>
 
-    <!-- CÓDIGO JAVASCRIPT (Justo antes de cerrar </body>) -->
-    <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx42CwoUI1mWWuLsRh1OCejlKa9rDuhc_02CcRdcSywWvpgdUQr6p2wPvqlOXvjn12Miw/exec";
-    const ADMIN_PIN = "1234";
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 p-3 flex flex-col gap-3 overflow-hidden">
 
-    let catalogo = [];
-    let carrito = [];
-    let ventas = [];
-    let vendedorActual = "Vendedor 1";
-    let categoriaSeleccionada = "TODAS";
-    let productoSeleccionadoRepo = null;
+        <!-- BARRA DE BÚSQUEDA Y SELECCIÓN DE VENDEDOR -->
+        <div class="flex gap-2">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Buscar producto por código o nombre..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition">
+                <button onclick="limpiarBuscador()" class="absolute right-2 top-1.5 text-slate-400 hover:text-white px-1 text-xs">✕</button>
+            </div>
+            <select onchange="cambiarVendedor(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl px-2 focus:outline-none focus:border-indigo-500">
+                <option value="Vendedor 1">Vendedor 1</option>
+                <option value="Vendedor 2">Vendedor 2</option>
+            </select>
+        </div>
 
-    window.onload = async function() {
-        await sincronizarConSheets();
-    };
+        <!-- CATEGORÍAS -->
+        <div id="contenedor-categorias" class="flex gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <!-- Renderizado dinámico de categorías -->
+        </div>
 
-    async function sincronizarConSheets() {
-        const grilla = document.getElementById('grilla-productos');
-        try {
-            let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
-            if (!res.ok) throw new Error("Error en la respuesta de la red");
-            
-            let data = await res.json();
-            catalogo = data.catalogo || [];
-            ventas = data.ventas || [];
-            
-            renderizarCategorias();
-            renderizarCatalogo();
-            actualizarSelectReposicion();
-        } catch (err) {
-            console.error("Error sincronizando con Sheets:", err);
-            if (grilla) {
-                grilla.innerHTML = `
-                    <div class="col-span-2 text-center text-red-400 py-6 text-xs font-bold bg-red-950/40 p-3 rounded-xl border border-red-800">
-                        ⚠️ Error de conexión con Google Sheets.
-                    </div>`;
-            }
-        }
-    }
+        <!-- GRILLA DE PRODUCTOS -->
+        <div class="flex justify-between items-center px-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catálogo</span>
+            <span id="badge-contador" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">0 items</span>
+        </div>
 
-    async function enviarASheets(payload) {
-        try {
-            await fetch(SHEETS_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload)
-            });
-        } catch (e) {
-            console.error("Error al enviar a Sheets:", e);
-        }
-    }
+        <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[42vh] pr-1">
+            <div class="col-span-2 text-center text-slate-400 py-8 text-xs">
+                ⏳ Cargando datos desde Google Sheets...
+            </div>
+        </div>
 
-    window.solicitarAccesoAdmin = function() {
-        let pin = prompt("🔒 PIN Administrador:");
-        if (pin === ADMIN_PIN) abrirModalInventario();
-        else if (pin !== null) alert("PIN incorrecto");
-    }
+        <!-- SECCIÓN CARRITO / TICKET -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col gap-2 shadow-xl flex-1 justify-between">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
+                <span class="font-bold text-xs text-slate-200 flex items-center">
+                    <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Carrito Actual
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="agregarMontoLibre()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2 py-0.5 rounded transition">+ Monto Libre</button>
+                    <button onclick="vaciarCarrito()" class="text-[10px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
+                </div>
+            </div>
 
-    function renderizarCategorias() {
-        const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
-        const cont = document.getElementById('contenedor-categorias');
-        if (!cont) return;
-        cont.innerHTML = '';
-        categorias.forEach(cat => {
-            let activa = cat === categoriaSeleccionada;
-            cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">${cat}</button>`;
-        });
-    }
+            <!-- DETALLE DE ITEMS -->
+            <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[18vh] space-y-1 my-1 pr-1 text-xs">
+                <span class="text-center text-slate-500 block py-3 italic">Carrito vacío. Haz clic en un producto para agregarlo.</span>
+            </div>
 
-    window.seleccionarCategoria = function(cat) {
-        categoriaSeleccionada = cat;
-        renderizarCategorias();
-        renderizarCatalogo();
-    }
+            <!-- TOTAL Y BOTÓN DE COBRO -->
+            <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
+                <div>
+                    <span class="text-[10px] text-slate-400 block uppercase font-bold">Total a cobrar</span>
+                    <span id="total-carrito" class="text-xl font-black text-emerald-400 leading-none">$0</span>
+                </div>
+                <button onclick="abrirModalCobro()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-2">
+                    <span>COBRAR</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </main>
 
-    function renderizarCatalogo() {
-        const grilla = document.getElementById('grilla-productos');
-        if (!grilla) return;
-        grilla.innerHTML = '';
-        
-        let buscador = document.getElementById('input-buscador');
-        let filtroTexto = buscador ? buscador.value.trim().toLowerCase() : '';
+    <!-- MODAL DE COBRO Y VISITA -->
+    <div id="modal-cobro" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <h3 class="font-bold text-sm text-white">Detalle de Visita / Cobro</h3>
+                <button onclick="cerrarModalCobro()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+            </div>
 
-        let filtrados = catalogo.filter(p => {
-            let coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
-            let coincideTexto = String(p.nombre || '').toLowerCase().includes(filtroTexto) || String(p.codigo || '').toLowerCase().includes(filtroTexto);
-            return coincideCat && coincideTexto;
-        });
-
-        let badge = document.getElementById('badge-contador');
-        if (badge) badge.innerText = `${filtrados.length} items`;
-        
-        if (filtrados.length === 0) {
-            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
-            return;
-        }
-
-        filtrados.forEach(prod => {
-            grilla.innerHTML += `
-                <button onclick="agregarAlCarrito('${prod.id}')" class="bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left flex flex-col relative hover:border-indigo-500 transition active:scale-95">
-                    <span class="absolute top-2 right-2 text-[10px] bg-slate-700 px-1 rounded font-bold text-slate-300">#${prod.codigo}</span>
-                    <span class="font-bold text-xs pr-6 text-slate-200">${prod.nombre}</span>
-                    <div class="flex justify-between items-end mt-2">
-                        <span class="text-indigo-400 font-black text-sm">$${Number(prod.precio).toLocaleString()}</span>
-                        <span class="text-[10px] text-slate-400">Stock: ${prod.stock}</span>
+            <div class="space-y-2 text-xs">
+                <div>
+                    <label class="text-slate-400 block mb-1">Agencia / Nombre:</label>
+                    <input type="text" id="input-agencia" placeholder="Ej: Particular, Turisbus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-slate-400 block mb-1">Guía a cargo:</label>
+                    <input type="text" id="input-guia" placeholder="Nombre del guía..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Cant. Pax (Personas):</label>
+                        <input type="number" id="input-cant-personas" oninput="calcularTotalVisita()" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
                     </div>
-                </button>`;
-        });
-    }
+                    <div>
+                        <label class="text-slate-400 block mb-1">Precio x Pax ($):</label>
+                        <input type="number" id="input-precio-unitario" oninput="calcularTotalVisita()" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-700/50 flex justify-between items-center">
+                    <span class="text-slate-400 font-medium">Subtotal Entradas:</span>
+                    <span id="modal-total-calculado" class="font-bold text-indigo-400">$0</span>
+                </div>
+            </div>
 
-    window.filtrarCatalogo = function() { renderizarCatalogo(); }
-    window.limpiarBuscador = function() {
-        let buscador = document.getElementById('input-buscador');
-        if (buscador) buscador.value = '';
-        renderizarCatalogo();
-    }
+            <div class="flex gap-2 pt-2 border-t border-slate-700">
+                <button onclick="cerrarModalCobro()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 rounded-xl font-bold transition">Cancelar</button>
+                <button onclick="confirmarYProcesarVenta()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-lg">Confirmar Venta</button>
+            </div>
+        </div>
+    </div>
 
-    window.agregarAlCarrito = function(id) {
-        let prod = catalogo.find(p => p.id == id);
-        if (!prod || prod.stock <= 0) { alert("Sin stock disponible"); return; }
-        let item = carrito.find(i => i.id == id);
-        if (item) item.cantidad++;
-        else carrito.push({...prod, cantidad: 1});
-        renderizarCarrito();
-    }
+    <!-- MODAL RENDICIÓN / CAJA -->
+    <div id="modal-rendicion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <h3 class="font-bold text-sm text-white">Rendición de Caja</h3>
+                <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+            </div>
 
-    window.agregarMontoLibre = function() {
-        let monto = parseFloat(prompt("Monto libre ($):"));
-        if (!monto || monto <= 0) return;
-        carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
-        renderizarCarrito();
-    }
+            <div class="bg-emerald-950/40 border border-emerald-800/50 p-3 rounded-xl flex justify-between items-center">
+                <span class="text-xs text-emerald-300 font-medium">Total Recaudado:</span>
+                <span id="rendicion-total-general" class="text-lg font-black text-emerald-400">$0</span>
+            </div>
 
-    function renderizarCarrito() {
-        const cont = document.getElementById('contenedor-items-carrito');
-        if (!cont) return;
-        cont.innerHTML = '';
-        let total = 0;
-        carrito.forEach(i => {
-            total += i.precio * i.cantidad;
-            cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b border-slate-700"><span>${i.nombre} (x${i.cantidad})</span><b>$${(i.precio * i.cantidad).toLocaleString()}</b></div>`;
-        });
-        document.getElementById('total-carrito').innerText = `$${total.toLocaleString()}`;
-    }
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historial de Transacciones</span>
+            <div id="lista-historial-ventas" class="overflow-y-auto max-h-[40vh] space-y-1.5 text-xs divide-y divide-slate-700/50 pr-1">
+                <span class="text-center text-slate-500 block py-4">No hay ventas registradas en el turno.</span>
+            </div>
 
-    window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
+            <div class="pt-2 border-t border-slate-700 flex gap-2">
+                <button onclick="reiniciarCajaTurno()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-700 text-red-300 text-xs py-2 rounded-xl font-bold transition">Reiniciar Turno</button>
+                <button onclick="cerrarRendicion()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 rounded-xl font-bold transition">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
-    window.abrirModalCobro = function() {
-        if (carrito.length === 0) { alert("El carrito está vacío"); return; }
-        document.getElementById('modal-cobro').classList.remove('hidden');
-    }
-    window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
+    <!-- MODAL INVENTARIO / ADMIN -->
+    <div id="modal-inventario" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-md flex flex-col gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <h3 class="font-bold text-sm text-white">⚙️ Administración de Inventario</h3>
+                <button onclick="cerrarModalInventario()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+            </div>
 
-    window.calcularTotalVisita = function() {
-        let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-        let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-        document.getElementById('modal-total-calculado').innerText = `$${(pax * precio).toLocaleString()}`;
-    }
+            <!-- REPOSICIÓN RÁPIDA -->
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
+                <span class="text-xs font-bold text-indigo-300 block">📦 Reposición de Stock Individual</span>
+                <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none">
+                    <option value="">-- Seleccionar --</option>
+                </select>
+                <div id="panel-reposicion-detalle" class="hidden flex gap-2 items-center pt-1">
+                    <span id="repo-prod-nombre" class="text-xs text-slate-300 font-bold flex-1 truncate"></span>
+                    <input type="number" id="input-cant-reposicion" placeholder="Cant" class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white text-center">
+                    <button onclick="ejecutarAccionStock()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Sumar</button>
+                </div>
+            </div>
 
-    window.confirmarYProcesarVenta = async function() {
-        let agencia = document.getElementById('input-agencia').value || "Particular";
-        let guia = document.getElementById('input-guia').value || "Sin Guía";
-        let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-        let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-        let totalVisita = pax * precioU;
-        let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            <!-- IMPORTACIÓN MASIVA DESDE EXCEL -->
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
+                <span class="text-xs font-bold text-emerald-300 block">✨ Importar/Reemplazar Catálogo desde Excel</span>
+                <p class="text-[10px] text-slate-400">Pega las columnas desde Excel: <b>Código | Nombre | Categoría | Precio | Stock</b></p>
+                <textarea id="textarea-excel" rows="4" placeholder="101&#t;Vela Chica&#t;Velas&#t;500&#t;50" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"></textarea>
+                <button onclick="importarDesdeTextoExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-xl font-bold transition shadow">🚀 Cargar a Google Sheets</button>
+            </div>
 
-        let fechaActual = new Date().toLocaleDateString();
-        let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            <button onclick="cerrarModalInventario()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 rounded-xl font-bold transition mt-1">Cerrar Panel</button>
+        </div>
+    </div>
 
-        // Descontar stock y registrar movimientos individuales por producto
-        for (let item of carrito) {
-            if (!item.esMontoLibre) {
-                let p = catalogo.find(x => x.id == item.id);
-                if (p) {
-                    p.stock = Number(p.stock) - Number(item.cantidad);
-                    
-                    // Enviar registro a movimientos_stock
-                    await enviarASheets({
-                        action: "registrarMovimiento",
-                        movimiento: {
-                            id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
-                            fecha: fechaActual,
-                            hora: horaActual,
-                            tipo: "VENTA",
-                            producto: item.nombre,
-                            cantidad: -item.cantidad,
-                            usuario: vendedorActual
-                        }
-                    });
+    <!-- CÓDIGO JAVASCRIPT -->
+    <script>
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbx42CwoUI1mWWuLsRh1OCejlKa9rDuhc_02CcRdcSywWvpgdUQr6p2wPvqlOXvjn12Miw/exec";
+        const ADMIN_PIN = "1234";
+
+        let catalogo = [];
+        let carrito = [];
+        let ventas = [];
+        let vendedorActual = "Vendedor 1";
+        let categoriaSeleccionada = "TODAS";
+        let productoSeleccionadoRepo = null;
+
+        window.onload = async function() {
+            await sincronizarConSheets();
+        };
+
+        async function sincronizarConSheets() {
+            const grilla = document.getElementById('grilla-productos');
+            try {
+                let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
+                if (!res.ok) throw new Error("Error en la respuesta de la red");
+                
+                let data = await res.json();
+                catalogo = data.catalogo || [];
+                ventas = data.ventas || [];
+                
+                renderizarCategorias();
+                renderizarCatalogo();
+                actualizarSelectReposicion();
+            } catch (err) {
+                console.error("Error sincronizando con Sheets:", err);
+                if (grilla) {
+                    grilla.innerHTML = `
+                        <div class="col-span-2 text-center text-red-400 py-6 text-xs font-bold bg-red-950/40 p-3 rounded-xl border border-red-800">
+                            ⚠️ Error de conexión con Google Sheets.
+                        </div>`;
                 }
             }
         }
 
-        let ventaObj = {
-            id: 'v_' + Date.now(),
-            fecha: fechaActual,
-            hora: horaActual,
-            vendedor: vendedorActual,
-            agencia: agencia,
-            guia: guia,
-            cantPersonas: pax,
-            precioUnitario: precioU,
-            total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
-            productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
-        };
-
-        ventas.push(ventaObj);
-        await enviarASheets({action: "guardarVenta", venta: ventaObj});
-        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-
-        alert("¡Venta y movimientos de stock registrados en Google Sheets!");
-        cerrarModalCobro();
-        vaciarCarrito();
-        renderizarCatalogo();
-    }
-
-    window.abrirRendicion = function() {
-        document.getElementById('modal-rendicion').classList.remove('hidden');
-        let totalGen = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
-        document.getElementById('rendicion-total-general').innerText = `$${totalGen.toLocaleString()}`;
-        
-        let hist = document.getElementById('lista-historial-ventas');
-        if (!hist) return;
-        hist.innerHTML = '';
-        ventas.slice().reverse().forEach(v => {
-            hist.innerHTML += `<div class="p-2 border-b border-slate-700/50 text-xs flex justify-between"><div><b>${v.agencia}</b> (${v.guia})<br><small class="text-slate-400">${v.fecha} ${v.hora}</small></div><b class="text-emerald-400">$${Number(v.total).toLocaleString()}</b></div>`;
-        });
-    }
-    window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
-
-    window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
-    window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
-
-    function actualizarSelectReposicion() {
-        let sel = document.getElementById('select-producto-reposicion');
-        if (!sel) return;
-        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
-        catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
-    }
-
-    window.seleccionarProductoReposicion = function(id) {
-        productoSeleccionadoRepo = catalogo.find(p => p.id == id);
-        if (productoSeleccionadoRepo) {
-            document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
-            document.getElementById('panel-reposicion-detalle').classList.remove('hidden');
-            document.getElementById('panel-reposicion-detalle').classList.add('flex');
+        async function enviarASheets(payload) {
+            try {
+                await fetch(SHEETS_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                console.error("Error al enviar a Sheets:", e);
+            }
         }
-    }
 
-    window.ejecutarAccionStock = async function() {
-        if (!productoSeleccionadoRepo) return;
-        let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
-        productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
-        
-        let fechaActual = new Date().toLocaleDateString();
-        let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        window.solicitarAccesoAdmin = function() {
+            let pin = prompt("🔒 PIN Administrador:");
+            if (pin === ADMIN_PIN) abrirModalInventario();
+            else if (pin !== null) alert("PIN incorrecto");
+        }
 
-        // Registrar reposición en movimientos_stock
-        await enviarASheets({
-            action: "registrarMovimiento",
-            movimiento: {
-                id: 'm_' + Date.now(),
+        function renderizarCategorias() {
+            const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
+            const cont = document.getElementById('contenedor-categorias');
+            if (!cont) return;
+            cont.innerHTML = '';
+            categorias.forEach(cat => {
+                let activa = cat === categoriaSeleccionada;
+                cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">${cat}</button>`;
+            });
+        }
+
+        window.seleccionarCategoria = function(cat) {
+            categoriaSeleccionada = cat;
+            renderizarCategorias();
+            renderizarCatalogo();
+        }
+
+        function renderizarCatalogo() {
+            const grilla = document.getElementById('grilla-productos');
+            if (!grilla) return;
+            grilla.innerHTML = '';
+            
+            let buscador = document.getElementById('input-buscador');
+            let filtroTexto = buscador ? buscador.value.trim().toLowerCase() : '';
+
+            let filtrados = catalogo.filter(p => {
+                let coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
+                let coincideTexto = String(p.nombre || '').toLowerCase().includes(filtroTexto) || String(p.codigo || '').toLowerCase().includes(filtroTexto);
+                return coincideCat && coincideTexto;
+            });
+
+            let badge = document.getElementById('badge-contador');
+            if (badge) badge.innerText = `${filtrados.length} items`;
+            
+            if (filtrados.length === 0) {
+                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
+                return;
+            }
+
+            filtrados.forEach(prod => {
+                grilla.innerHTML += `
+                    <button onclick="agregarAlCarrito('${prod.id}')" class="bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left flex flex-col relative hover:border-indigo-500 transition active:scale-95">
+                        <span class="absolute top-2 right-2 text-[10px] bg-slate-700 px-1 rounded font-bold text-slate-300">#${prod.codigo}</span>
+                        <span class="font-bold text-xs pr-6 text-slate-200">${prod.nombre}</span>
+                        <div class="flex justify-between items-end mt-2">
+                            <span class="text-indigo-400 font-black text-sm">$${Number(prod.precio).toLocaleString()}</span>
+                            <span class="text-[10px] text-slate-400">Stock: ${prod.stock}</span>
+                        </div>
+                    </button>`;
+            });
+        }
+
+        window.filtrarCatalogo = function() { renderizarCatalogo(); }
+        window.limpiarBuscador = function() {
+            let buscador = document.getElementById('input-buscador');
+            if (buscador) buscador.value = '';
+            renderizarCatalogo();
+        }
+
+        window.agregarAlCarrito = function(id) {
+            let prod = catalogo.find(p => p.id == id);
+            if (!prod || prod.stock <= 0) { alert("Sin stock disponible"); return; }
+            let item = carrito.find(i => i.id == id);
+            if (item) item.cantidad++;
+            else carrito.push({...prod, cantidad: 1});
+            renderizarCarrito();
+        }
+
+        window.agregarMontoLibre = function() {
+            let monto = parseFloat(prompt("Monto libre ($):"));
+            if (!monto || monto <= 0) return;
+            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
+            renderizarCarrito();
+        }
+
+        function renderizarCarrito() {
+            const cont = document.getElementById('contenedor-items-carrito');
+            if (!cont) return;
+            cont.innerHTML = '';
+            let total = 0;
+            carrito.forEach(i => {
+                total += i.precio * i.cantidad;
+                cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b border-slate-700"><span>${i.nombre} (x${i.cantidad})</span><b>$${(i.precio * i.cantidad).toLocaleString()}</b></div>`;
+            });
+            document.getElementById('total-carrito').innerText = `$${total.toLocaleString()}`;
+        }
+
+        window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
+
+        window.abrirModalCobro = function() {
+            if (carrito.length === 0) { alert("El carrito está vacío"); return; }
+            document.getElementById('modal-cobro').classList.remove('hidden');
+        }
+        window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
+
+        window.calcularTotalVisita = function() {
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            document.getElementById('modal-total-calculado').innerText = `$${(pax * precio).toLocaleString()}`;
+        }
+
+        window.confirmarYProcesarVenta = async function() {
+            let agencia = document.getElementById('input-agencia').value || "Particular";
+            let guia = document.getElementById('input-guia').value || "Sin Guía";
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            let totalVisita = pax * precioU;
+            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+
+            let fechaActual = new Date().toLocaleDateString();
+            let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            for (let item of carrito) {
+                if (!item.esMontoLibre) {
+                    let p = catalogo.find(x => x.id == item.id);
+                    if (p) {
+                        p.stock = Number(p.stock) - Number(item.cantidad);
+                        
+                        await enviarASheets({
+                            action: "registrarMovimiento",
+                            movimiento: {
+                                id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
+                                fecha: fechaActual,
+                                hora: horaActual,
+                                tipo: "VENTA",
+                                producto: item.nombre,
+                                cantidad: -item.cantidad,
+                                usuario: vendedorActual
+                            }
+                        });
+                    }
+                }
+            }
+
+            let ventaObj = {
+                id: 'v_' + Date.now(),
                 fecha: fechaActual,
                 hora: horaActual,
-                tipo: "REPOSICION",
-                producto: productoSeleccionadoRepo.nombre,
-                cantidad: cant,
-                usuario: vendedorActual
-            }
-        });
+                vendedor: vendedorActual,
+                agencia: agencia,
+                guia: guia,
+                cantPersonas: pax,
+                precioUnitario: precioU,
+                total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
+                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+            };
 
-        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("Stock y movimientos actualizados en Google Sheets");
-        actualizarSelectReposicion();
-        renderizarCatalogo();
-    }
+            ventas.push(ventaObj);
+            await enviarASheets({action: "guardarVenta", venta: ventaObj});
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-    window.importarDesdeTextoExcel = async function() {
-        let texto = document.getElementById('textarea-excel').value;
-        if (!texto) return;
-        let lineas = texto.split('\n');
-        catalogo = [];
-        lineas.forEach((l, idx) => {
-            let cols = l.split('\t');
-            if (cols.length >= 4) {
-                catalogo.push({
-                    id: 'p_' + (Date.now() + idx),
-                    codigo: cols[0].trim(),
-                    nombre: cols[1].trim(),
-                    categoria: cols[2].trim(),
-                    precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
-                    stock: parseInt(cols[4] ? cols[4].trim() : 0) || 0,
-                    componentesStr: cols[5] ? cols[5].trim() : ''
-                });
-            }
-        });
-        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("¡Inventario subido correctamente!");
-        renderizarCatalogo();
-        actualizarSelectReposicion();
-        cerrarModalInventario();
-    }
-
-    window.reiniciarCajaTurno = async function() {
-        if (confirm("¿Reiniciar todas las ventas grabadas en Google Sheets?")) {
-            ventas = [];
-            await enviarASheets({action: "reiniciarVentas"});
-            abrirRendicion();
+            alert("¡Venta y movimientos de stock registrados en Google Sheets!");
+            cerrarModalCobro();
+            vaciarCarrito();
+            renderizarCatalogo();
         }
-    }
 
-    window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
+        window.abrirRendicion = function() {
+            document.getElementById('modal-rendicion').classList.remove('hidden');
+            let totalGen = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
+            document.getElementById('rendicion-total-general').innerText = `$${totalGen.toLocaleString()}`;
+            
+            let hist = document.getElementById('lista-historial-ventas');
+            if (!hist) return;
+            hist.innerHTML = '';
+            ventas.slice().reverse().forEach(v => {
+                hist.innerHTML += `<div class="p-2 border-b border-slate-700/50 text-xs flex justify-between"><div><b>${v.agencia}</b> (${v.guia})<br><small class="text-slate-400">${v.fecha} ${v.hora}</small></div><b class="text-emerald-400">$${Number(v.total).toLocaleString()}</b></div>`;
+            });
+        }
+        window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
 
+        window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
+        window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
+
+        function actualizarSelectReposicion() {
+            let sel = document.getElementById('select-producto-reposicion');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+            catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
+        }
+
+        window.seleccionarProductoReposicion = function(id) {
+            productoSeleccionadoRepo = catalogo.find(p => p.id == id);
+            if (productoSeleccionadoRepo) {
+                document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
+                document.getElementById('panel-reposicion-detalle').classList.remove('hidden');
+                document.getElementById('panel-reposicion-detalle').classList.add('flex');
+            }
+        }
+
+        window.ejecutarAccionStock = async function() {
+            if (!productoSeleccionadoRepo) return;
+            let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
+            productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
+            
+            let fechaActual = new Date().toLocaleDateString();
+            let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            await enviarASheets({
+                action: "registrarMovimiento",
+                movimiento: {
+                    id: 'm_' + Date.now(),
+                    fecha: fechaActual,
+                    hora: horaActual,
+                    tipo: "REPOSICION",
+                    producto: productoSeleccionadoRepo.nombre,
+                    cantidad: cant,
+                    usuario: vendedorActual
+                }
+            });
+
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+            alert("Stock y movimientos actualizados en Google Sheets");
+            actualizarSelectReposicion();
+            renderizarCatalogo();
+        }
+
+        window.importarDesdeTextoExcel = async function() {
+            let texto = document.getElementById('textarea-excel').value;
+            if (!texto) return;
+            let lineas = texto.split('\n');
+            catalogo = [];
+            lineas.forEach((l, idx) => {
+                let cols = l.split('\t');
+                if (cols.length >= 4) {
+                    catalogo.push({
+                        id: 'p_' + (Date.now() + idx),
+                        codigo: cols[0].trim(),
+                        nombre: cols[1].trim(),
+                        categoria: cols[2].trim(),
+                        precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
+                        stock: parseInt(cols[4] ? cols[4].trim() : 0) || 0,
+                        componentesStr: cols[5] ? cols[5].trim() : ''
+                    });
+                }
+            });
+            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+            alert("¡Inventario subido correctamente!");
+            renderizarCatalogo();
+            actualizarSelectReposicion();
+            cerrarModalInventario();
+        }
+
+        window.reiniciarCajaTurno = async function() {
+            if (confirm("¿Reiniciar todas las ventas grabadas en Google Sheets?")) {
+                ventas = [];
+                await enviarASheets({action: "reiniciarVentas"});
+                abrirRendicion();
+            }
+        }
+
+        window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
     </script>
 </body>
 </html>
