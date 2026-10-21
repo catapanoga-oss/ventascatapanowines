@@ -94,42 +94,64 @@
         </div>
     </main>
 
-    <!-- MODAL DE COBRO Y VISITA -->
+    <!-- MODAL DE COBRO Y PAGOS MIXTOS -->
     <div id="modal-cobro" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-md flex flex-col gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">Detalle de Visita / Cobro</h3>
+                <h3 class="font-bold text-sm text-white">💳 Cierre de Venta y Formas de Pago</h3>
                 <button onclick="cerrarModalCobro()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
 
             <div class="space-y-2 text-xs">
-                <div>
-                    <label class="text-slate-400 block mb-1">Agencia / Nombre:</label>
-                    <input type="text" id="input-agencia" placeholder="Ej: Particular, Turisbus..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="text-slate-400 block mb-1">Guía a cargo:</label>
-                    <input type="text" id="input-guia" placeholder="Nombre del guía..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
-                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
+                        <label class="text-slate-400 block mb-1">Agencia / Nombre:</label>
+                        <input type="text" id="input-agencia" placeholder="Particular..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 block mb-1">Guía a cargo:</label>
+                        <input type="text" id="input-guia" placeholder="Nombre del guía..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 bg-slate-900/40 p-2 rounded-xl border border-slate-700/50">
+                    <div>
                         <label class="text-slate-400 block mb-1">Cant. Pax (Personas):</label>
-                        <input type="number" id="input-cant-personas" oninput="calcularTotalVisita()" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                        <input type="number" id="input-cant-personas" oninput="calcularTotalVisita()" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center">
                     </div>
                     <div>
                         <label class="text-slate-400 block mb-1">Precio x Pax ($):</label>
-                        <input type="number" id="input-precio-unitario" oninput="calcularTotalVisita()" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-indigo-500">
+                        <input type="number" id="input-precio-unitario" oninput="calcularTotalVisita()" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center">
                     </div>
                 </div>
-                <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-700/50 flex justify-between items-center">
-                    <span class="text-slate-400 font-medium">Subtotal Entradas:</span>
-                    <span id="modal-total-calculado" class="font-bold text-indigo-400">$0</span>
+
+                <!-- RESUMEN TOTAL A PAGAR -->
+                <div class="bg-indigo-950/40 border border-indigo-800/50 p-2.5 rounded-xl flex justify-between items-center">
+                    <span class="text-indigo-300 font-bold">Total General a Cobrar:</span>
+                    <span id="modal-total-general-cobro" class="text-base font-black text-indigo-400">$0</span>
+                </div>
+
+                <!-- DESGLOSE DE PAGOS MIXTOS -->
+                <span class="font-bold text-slate-300 block pt-1">Distribución del Pago:</span>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Efectivo ($)</label>
+                        <input type="number" id="pago-efectivo" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Tarjeta ($)</label>
+                        <input type="number" id="pago-tarjeta" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-1">Mercado Pago ($)</label>
+                        <input type="number" id="pago-mp" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white text-center focus:border-emerald-500">
+                    </div>
                 </div>
             </div>
 
             <div class="flex gap-2 pt-2 border-t border-slate-700">
                 <button onclick="cerrarModalCobro()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2.5 rounded-xl font-bold transition">Cancelar</button>
-                <button onclick="confirmarYProcesarVenta()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-lg">Confirmar Venta</button>
+                <button onclick="confirmarYProcesarVenta()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold transition shadow-lg">💳 Procesar y Cobrar</button>
             </div>
         </div>
     </div>
@@ -186,7 +208,7 @@
 
     <!-- CÓDIGO JAVASCRIPT -->
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyqShuzv5O5zNECeJpiH4n-vhNBE4mko5YvmOIcO4ViG_0nAR9nodswYrmDAxbkBcJGA/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwHNnuLSfJmeAZhf6qqZdqG-_nzr3B55hQRm0u_yBpscdOs24uf0pNOqe7rFkbgiFEg/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
@@ -337,104 +359,134 @@
         window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
         window.abrirModalCobro = function() {
-            if (carrito.length === 0) { alert("El carrito está vacío"); return; }
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            let totalVisita = pax * precioU;
+            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            let granTotal = totalVisita > 0 ? totalVisita + totalProd : totalProd;
+
+            if (granTotal <= 0) {
+                alert("El carrito está vacío y no hay entradas configuradas."); 
+                return; 
+            }
+
             document.getElementById('modal-cobro').classList.remove('hidden');
+            document.getElementById('modal-total-general-cobro').innerText = `$${granTotal.toLocaleString()}`;
+            
+            // Sugerir el pago completo en efectivo por defecto
+            document.getElementById('pago-efectivo').value = granTotal;
+            document.getElementById('pago-tarjeta').value = 0;
+            document.getElementById('pago-mp').value = 0;
         }
+
         window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
 
         window.calcularTotalVisita = function() {
             let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
             let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            document.getElementById('modal-total-calculado').innerText = `$${(pax * precio).toLocaleString()}`;
+            let totalVisita = pax * precio;
+            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            let granTotal = totalVisita > 0 ? totalVisita + totalProd : totalProd;
+            
+            document.getElementById('modal-total-general-cobro').innerText = `$${granTotal.toLocaleString()}`;
+            document.getElementById('pago-efectivo').value = granTotal;
         }
 
         window.confirmarYProcesarVenta = async function() {
-    let agencia = document.getElementById('input-agencia').value || "Particular";
-    let guia = document.getElementById('input-guia').value || "Sin Guía";
-    let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-    let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-    let totalVisita = pax * precioU;
-    let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            let agencia = document.getElementById('input-agencia').value || "Particular";
+            let guia = document.getElementById('input-guia').value || "Sin Guía";
+            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+            let totalVisita = pax * precioU;
+            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+            let granTotal = totalVisita > 0 ? totalVisita + totalProd : totalProd;
 
-    let fechaActual = new Date().toLocaleDateString();
-    let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            // Obtener montos desglosados por pago
+            let pagoEfe = parseFloat(document.getElementById('pago-efectivo').value) || 0;
+            let pagoTar = parseFloat(document.getElementById('pago-tarjeta').value) || 0;
+            let pagoMp = parseFloat(document.getElementById('pago-mp').value) || 0;
+            let sumaPagos = pagoEfe + pagoTar + pagoMp;
 
-    // Recorrer los items comprados
-    for (let item of carrito) {
-        if (!item.esMontoLibre) {
-            
-            // VERIFICAR SI EL ITEM ES UN COMBO (tiene componentesStr)
-            if (item.componentesStr && item.componentesStr.trim() !== "") {
-                // Desglosar los componentes (ej: "101:2,102:1")
-                let listaComponentes = item.componentesStr.split(',');
-                
-                for (let comp of listaComponentes) {
-                    let partes = comp.split(':');
-                    let codComponente = partes[0].trim();
-                    let cantPorCombo = parseInt(partes[1]) || 1;
-                    
-                    // Calcular cantidad total a descontar (unidades del combo x cantidad de combos comprados)
-                    let cantTotalDescontar = cantPorCombo * Number(item.cantidad);
-                    
-                    // Buscar el nombre del producto individual para que quede lindo en la auditoría
-                    let prodIndividual = catalogo.find(p => String(p.codigo) === String(codComponente));
-                    let nombreProd = prodIndividual ? prodIndividual.nombre : "Componente " + codComponente;
-
-                    // Enviar movimiento individual por cada componente del combo
-                    await enviarASheets({
-                        action: "registrarMovimiento",
-                        movimiento: {
-                            id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
-                            fecha: fechaActual,
-                            hora: horaActual,
-                            tipo: "VENTA_COMBO",
-                            codigo_producto: codComponente,
-                            producto: nombreProd + " (vía " + item.nombre + ")",
-                            cantidad: -cantTotalDescontar,
-                            usuario: vendedorActual
-                        }
-                    });
-                }
-            } else {
-                // ES UN PRODUCTO INDIVIDUAL NORMAL
-                await enviarASheets({
-                    action: "registrarMovimiento",
-                    movimiento: {
-                        id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
-                        fecha: fechaActual,
-                        hora: horaActual,
-                        tipo: "VENTA",
-                        codigo_producto: item.codigo,
-                        producto: item.nombre,
-                        cantidad: -Number(item.cantidad),
-                        usuario: vendedorActual
-                    }
-                });
+            // Validar coherencia del monto a cobrar
+            if (Math.abs(sumaPagos - granTotal) > 1) {
+                alert(`⚠️ La suma de los pagos ($${sumaPagos.toLocaleString()}) no coincide con el total a cobrar ($${granTotal.toLocaleString()}). Revisa los montos.`);
+                return;
             }
+
+            let fechaActual = new Date().toLocaleDateString();
+            let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            // Recorrer carrito para registrar salidas (Desglosando COMBOS o Productos individuales)
+            for (let item of carrito) {
+                if (!item.esMontoLibre) {
+                    if (item.componentesStr && item.componentesStr.trim() !== "") {
+                        let listaComponentes = item.componentesStr.split(',');
+                        for (let comp of listaComponentes) {
+                            let partes = comp.split(':');
+                            let codComponente = partes[0].trim();
+                            let cantPorCombo = parseInt(partes[1]) || 1;
+                            let cantTotalDescontar = cantPorCombo * Number(item.cantidad);
+                            
+                            let prodIndividual = catalogo.find(p => String(p.codigo) === String(codComponente));
+                            let nombreProd = prodIndividual ? prodIndividual.nombre : "Componente " + codComponente;
+
+                            await enviarASheets({
+                                action: "registrarMovimiento",
+                                movimiento: {
+                                    id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
+                                    fecha: fechaActual,
+                                    hora: horaActual,
+                                    tipo: "VENTA_COMBO",
+                                    codigo_producto: codComponente,
+                                    producto: nombreProd + " (vía " + item.nombre + ")",
+                                    cantidad: -cantTotalDescontar,
+                                    usuario: vendedorActual
+                                }
+                            });
+                        }
+                    } else {
+                        await enviarASheets({
+                            action: "registrarMovimiento",
+                            movimiento: {
+                                id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
+                                fecha: fechaActual,
+                                hora: horaActual,
+                                tipo: "VENTA",
+                                codigo_producto: item.codigo,
+                                producto: item.nombre,
+                                cantidad: -Number(item.cantidad),
+                                usuario: vendedorActual
+                            }
+                        });
+                    }
+                }
+            }
+
+            // Registrar objeto de venta con distribución de pagos
+            let ventaObj = {
+                id: 'v_' + Date.now(),
+                fecha: fechaActual,
+                hora: horaActual,
+                vendedor: vendedorActual,
+                agencia: agencia,
+                guia: guia,
+                cantPersonas: pax,
+                precioUnitario: precioU,
+                total: granTotal,
+                pagoEfectivo: pagoEfe,
+                pagoTarjeta: pagoTar,
+                pagoMercadoPago: pagoMp,
+                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+            };
+
+            ventas.push(ventaObj);
+            await enviarASheets({action: "guardarVenta", venta: ventaObj});
+
+            alert("¡Venta cobrada con éxito y stock actualizado!");
+            cerrarModalCobro();
+            vaciarCarrito();
+            await sincronizarConSheets();
         }
-    }
-
-    let ventaObj = {
-        id: 'v_' + Date.now(),
-        fecha: fechaActual,
-        hora: horaActual,
-        vendedor: vendedorActual,
-        agencia: agencia,
-        guia: guia,
-        cantPersonas: pax,
-        precioUnitario: precioU,
-        total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
-        productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
-    };
-
-    ventas.push(ventaObj);
-    await enviarASheets({action: "guardarVenta", venta: ventaObj});
-
-    alert("¡Venta registrada! Los insumos y combos fueron descontados del stock.");
-    cerrarModalCobro();
-    vaciarCarrito();
-    await sincronizarConSheets();
-}
 
         window.abrirRendicion = function() {
             document.getElementById('modal-rendicion').classList.remove('hidden');
