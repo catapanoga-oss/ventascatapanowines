@@ -1,5 +1,6 @@
 <script>
-    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyeYDOWsCNdp1CCqTr74h0idERGLksY7fsOSsmjxJxzYZmvxIymIAAXwQxvenARUFCv1A/exec";
+    // ⚠️ REEMPLAZA CON TU NUEVA URL DE GOOGLE APPS SCRIPT (TRas hacer un Nuevo Despliegue)
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwYJqAUScBdKgWCzjYZN2eiSiCkXG0AIqBowQFVsddQ_2ZmkPPt7A0wKIGWTI__mvkSmA/exec";
     const ADMIN_PIN = "1234";
 
     let catalogo = [];
@@ -13,13 +14,14 @@
         await sincronizarConSheets();
     };
 
+    // Sincronización optimizada con Google Sheets (GET)
     async function sincronizarConSheets() {
         const grilla = document.getElementById('grilla-productos');
         try {
-            // Se agrega redirect: "follow" para asegurar el seguimiento de Google Apps Script
             let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
-            let data = await res.json();
+            if (!res.ok) throw new Error("Error en la respuesta del servidor");
             
+            let data = await res.json();
             catalogo = data.catalogo || [];
             ventas = data.ventas || [];
             
@@ -29,11 +31,16 @@
         } catch (err) {
             console.error("Error sincronizando con Sheets:", err);
             if (grilla) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-red-500 py-6 text-xs font-bold">⚠️ Error de conexión con Google Sheets.<br>Verifica los permisos en Apps Script ("Cualquier usuario").</span>`;
+                grilla.innerHTML = `
+                    <div class="col-span-2 text-center text-red-500 py-6 text-xs font-bold bg-red-50 p-3 rounded-xl border border-red-200">
+                        ⚠️ Error de conexión con Google Sheets.<br>
+                        Verifica que el despliegue esté configurado con acceso para: <b>"Cualquier usuario"</b>.
+                    </div>`;
             }
         }
     }
 
+    // Envío seguro de transacciones a Google Sheets (POST)
     async function enviarASheets(payload) {
         try {
             await fetch(SHEETS_URL, {
@@ -60,7 +67,7 @@
         cont.innerHTML = '';
         categorias.forEach(cat => {
             let activa = cat === categoriaSeleccionada;
-            cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300'}">${cat}</button>`;
+            cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300 hover:bg-indigo-800'}">${cat}</button>`;
         });
     }
 
@@ -75,25 +82,41 @@
         if (!grilla) return;
         grilla.innerHTML = '';
         
-        let filtrados = catalogo.filter(p => categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada);
-        document.getElementById('badge-contador').innerText = `${filtrados.length} items`;
+        let elBuscador = document.getElementById('input-buscador');
+        let filtroTexto = elBuscador ? elBuscador.value.trim().toLowerCase() : '';
+
+        let filtrados = catalogo.filter(p => {
+            let coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
+            let coincideTexto = String(p.nombre || '').toLowerCase().includes(filtroTexto) || String(p.codigo || '').toLowerCase().includes(filtroTexto);
+            return coincideCat && coincideTexto;
+        });
+
+        let badge = document.getElementById('badge-contador');
+        if (badge) badge.innerText = `${filtrados.length} items`;
         
         if (filtrados.length === 0) {
-            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
+            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos disponibles. Usa el panel de Admin 🔐 para importar stock.</span>`;
             return;
         }
 
         filtrados.forEach(prod => {
             grilla.innerHTML += `
-                <button onclick="agregarAlCarrito('${prod.id}')" class="bg-white border p-2.5 rounded-xl shadow-sm text-left flex flex-col relative">
-                    <span class="absolute top-2 right-2 text-[10px] bg-slate-100 px-1 rounded font-bold">#${prod.codigo}</span>
-                    <span class="font-bold text-xs pr-6">${prod.nombre}</span>
+                <button onclick="agregarAlCarrito('${prod.id}')" class="bg-white border p-2.5 rounded-xl shadow-sm text-left flex flex-col relative hover:border-indigo-500 transition">
+                    <span class="absolute top-2 right-2 text-[10px] bg-slate-100 px-1 rounded font-bold text-slate-600">#${prod.codigo}</span>
+                    <span class="font-bold text-xs pr-6 text-slate-800">${prod.nombre}</span>
                     <div class="flex justify-between items-end mt-2">
-                        <span class="text-indigo-900 font-black">$${prod.precio}</span>
+                        <span class="text-indigo-900 font-black text-sm">$${Number(prod.precio).toLocaleString()}</span>
                         <span class="text-[10px] text-slate-500">Stock: ${prod.stock}</span>
                     </div>
                 </button>`;
         });
+    }
+
+    window.filtrarCatalogo = function() { renderizarCatalogo(); }
+    window.limpiarBuscador = function() {
+        let input = document.getElementById('input-buscador');
+        if (input) input.value = '';
+        renderizarCatalogo();
     }
 
     window.agregarAlCarrito = function(id) {
@@ -119,15 +142,15 @@
         let total = 0;
         carrito.forEach(i => {
             total += i.precio * i.cantidad;
-            cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b"><span>${i.nombre} (x${i.cantidad})</span><b>$${i.precio * i.cantidad}</b></div>`;
+            cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b border-slate-100"><span>${i.nombre} (x${i.cantidad})</span><b>$${(i.precio * i.cantidad).toLocaleString()}</b></div>`;
         });
-        document.getElementById('total-carrito').innerText = `$${total}`;
+        document.getElementById('total-carrito').innerText = `$${total.toLocaleString()}`;
     }
 
     window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
     window.abrirModalCobro = function() {
-        if (carrito.length === 0) { alert("Carrito vacío"); return; }
+        if (carrito.length === 0) { alert("El carrito está vacío."); return; }
         document.getElementById('modal-cobro').classList.remove('hidden');
     }
     window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
@@ -135,7 +158,7 @@
     window.calcularTotalVisita = function() {
         let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
         let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-        document.getElementById('modal-total-calculado').innerText = `$${pax * precio}`;
+        document.getElementById('modal-total-calculado').innerText = `$${(pax * precio).toLocaleString()}`;
     }
 
     window.confirmarYProcesarVenta = async function() {
@@ -149,7 +172,7 @@
         carrito.forEach(item => {
             if (!item.esMontoLibre) {
                 let p = catalogo.find(x => x.id == item.id);
-                if (p) p.stock -= item.cantidad;
+                if (p) p.stock = Number(p.stock) - Number(item.cantidad);
             }
         });
 
@@ -170,7 +193,7 @@
         await enviarASheets({action: "guardarVenta", venta: ventaObj});
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-        alert("¡Venta registrada!");
+        alert("¡Venta registrada con éxito en Google Sheets!");
         cerrarModalCobro();
         vaciarCarrito();
         renderizarCatalogo();
@@ -178,13 +201,14 @@
 
     window.abrirRendicion = function() {
         document.getElementById('modal-rendicion').classList.remove('hidden');
-        let totalGen = ventas.reduce((acc, v) => acc + Number(v.total), 0);
-        document.getElementById('rendicion-total-general').innerText = `$${totalGen}`;
+        let totalGen = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
+        document.getElementById('rendicion-total-general').innerText = `$${totalGen.toLocaleString()}`;
+        
         let hist = document.getElementById('lista-historial-ventas');
         if (!hist) return;
         hist.innerHTML = '';
         ventas.slice().reverse().forEach(v => {
-            hist.innerHTML += `<div class="p-1 border-b"><b>${v.agencia}</b> - $${v.total} <br><small>${v.fecha} ${v.hora}</small></div>`;
+            hist.innerHTML += `<div class="p-2 border-b text-xs flex justify-between"><div><b>${v.agencia}</b> (${v.guia})<br><small class="text-slate-500">${v.fecha} ${v.hora}</small></div><b class="text-emerald-600">$${Number(v.total).toLocaleString()}</b></div>`;
         });
     }
     window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
@@ -195,7 +219,7 @@
     function actualizarSelectReposicion() {
         let sel = document.getElementById('select-producto-reposicion');
         if (!sel) return;
-        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+        sel.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
         catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
     }
 
@@ -213,7 +237,7 @@
         let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
         productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("Stock actualizado");
+        alert("Stock actualizado correctamente en Sheets");
         actualizarSelectReposicion();
         renderizarCatalogo();
     }
@@ -231,21 +255,21 @@
                     codigo: cols[0].trim(),
                     nombre: cols[1].trim(),
                     categoria: cols[2].trim(),
-                    precio: parseFloat(cols[3].trim()) || 0,
-                    stock: parseInt(cols[4].trim()) || 0,
+                    precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
+                    stock: parseInt(cols[4] ? cols[4].trim() : 0) || 0,
                     componentesStr: cols[5] ? cols[5].trim() : ''
                 });
             }
         });
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("¡Inventario subido!");
+        alert("¡Inventario subido e importado a Google Sheets!");
         renderizarCatalogo();
         actualizarSelectReposicion();
         cerrarModalInventario();
     }
 
     window.reiniciarCajaTurno = async function() {
-        if (confirm("¿Reiniciar todas las ventas?")) {
+        if (confirm("¿Está seguro de reiniciar todas las ventas grabadas en Google Sheets?")) {
             ventas = [];
             await enviarASheets({action: "reiniciarVentas"});
             abrirRendicion();
@@ -253,5 +277,4 @@
     }
 
     window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
-    window.limpiarBuscador = function() { document.getElementById('input-buscador').value = ''; renderizarCatalogo(); }
 </script>
