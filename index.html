@@ -180,21 +180,13 @@
                 </div>
             </div>
 
-            <!-- IMPORTACIÓN MASIVA DESDE EXCEL -->
-            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
-                <span class="text-xs font-bold text-emerald-300 block">✨ Importar/Reemplazar Catálogo desde Excel</span>
-                <p class="text-[10px] text-slate-400">Pega las columnas desde Excel: <b>Código | Nombre | Categoría | Precio | Stock</b></p>
-                <textarea id="textarea-excel" rows="4" placeholder="101&#t;Vela Chica&#t;Velas&#t;500&#t;50" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"></textarea>
-                <button onclick="importarDesdeTextoExcel()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-xl font-bold transition shadow">🚀 Cargar a Google Sheets</button>
-            </div>
-
             <button onclick="cerrarModalInventario()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 rounded-xl font-bold transition mt-1">Cerrar Panel</button>
         </div>
     </div>
 
     <!-- CÓDIGO JAVASCRIPT -->
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyVrnYc0W5Nqb6GLkmZ4q_QtMXZ20bnBu1u_yaCKh3i8unEPIfHnx1myfhXcuQil9IUdg/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzyqShuzv5O5zNECeJpiH4n-vhNBE4mko5YvmOIcO4ViG_0nAR9nodswYrmDAxbkBcJGA/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
@@ -286,18 +278,20 @@
             if (badge) badge.innerText = `${filtrados.length} items`;
             
             if (filtrados.length === 0) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
+                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo.</span>`;
                 return;
             }
 
             filtrados.forEach(prod => {
+                // Toma stock_actual directo de Google Sheets
+                let stockDisponible = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
                 grilla.innerHTML += `
                     <button onclick="agregarAlCarrito('${prod.id}')" class="bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left flex flex-col relative hover:border-indigo-500 transition active:scale-95">
                         <span class="absolute top-2 right-2 text-[10px] bg-slate-700 px-1 rounded font-bold text-slate-300">#${prod.codigo}</span>
                         <span class="font-bold text-xs pr-6 text-slate-200">${prod.nombre}</span>
                         <div class="flex justify-between items-end mt-2">
                             <span class="text-indigo-400 font-black text-sm">$${Number(prod.precio).toLocaleString()}</span>
-                            <span class="text-[10px] text-slate-400">Stock: ${prod.stock}</span>
+                            <span class="text-[10px] ${stockDisponible <= 0 ? 'text-red-400 font-bold' : 'text-slate-400'}">Stock: ${stockDisponible}</span>
                         </div>
                     </button>`;
             });
@@ -312,10 +306,12 @@
 
         window.agregarAlCarrito = function(id) {
             let prod = catalogo.find(p => p.id == id);
-            if (!prod || prod.stock <= 0) { alert("Sin stock disponible"); return; }
+            let stockDisponible = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
+            if (!prod || stockDisponible <= 0) { alert("Sin stock disponible"); return; }
+            
             let item = carrito.find(i => i.id == id);
             if (item) item.cantidad++;
-            else carrito.push({...prod, cantidad: 1});
+            else carrito.push({...prod, stock_actual: stockDisponible, cantidad: 1});
             renderizarCarrito();
         }
 
@@ -363,34 +359,22 @@
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Procesar cada producto del carrito y auditar el stock
+            // Envia salidas a movimientos_stock (deja intacta la pestaña catalogo)
             for (let item of carrito) {
                 if (!item.esMontoLibre) {
-                    let p = catalogo.find(x => x.id == item.id);
-                    if (p) {
-                        let stockAntes = Number(p.stock) || 0;
-                        let cantidadVendida = Number(item.cantidad);
-                        let stockDespues = stockAntes - cantidadVendida;
-                        
-                        // Actualizar stock en memoria
-                        p.stock = stockDespues;
-
-                        // Registrar en movimientos_stock enviando el balance detallado
-                        await enviarASheets({
-                            action: "registrarMovimiento",
-                            movimiento: {
-                                id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
-                                fecha: fechaActual,
-                                hora: horaActual,
-                                tipo: "VENTA",
-                                producto: item.nombre,
-                                cantidad: -cantidadVendida,
-                                stockPrevio: stockAntes,
-                                stockResultante: stockDespues,
-                                usuario: vendedorActual
-                            }
-                        });
-                    }
+                    await enviarASheets({
+                        action: "registrarMovimiento",
+                        movimiento: {
+                            id: 'm_' + Date.now() + "_" + Math.floor(Math.random()*1000),
+                            fecha: fechaActual,
+                            hora: horaActual,
+                            tipo: "VENTA",
+                            codigo_producto: item.codigo,
+                            producto: item.nombre,
+                            cantidad: -Number(item.cantidad),
+                            usuario: vendedorActual
+                        }
+                    });
                 }
             }
 
@@ -409,12 +393,11 @@
 
             ventas.push(ventaObj);
             await enviarASheets({action: "guardarVenta", venta: ventaObj});
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-            alert("¡Venta registrada y stock actualizado en Google Sheets!");
+            alert("¡Venta registrada con éxito!");
             cerrarModalCobro();
             vaciarCarrito();
-            renderizarCatalogo();
+            await sincronizarConSheets();
         }
 
         window.abrirRendicion = function() {
@@ -438,7 +421,10 @@
             let sel = document.getElementById('select-producto-reposicion');
             if (!sel) return;
             sel.innerHTML = '<option value="">-- Seleccionar --</option>';
-            catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
+            catalogo.forEach(p => { 
+                let stockActual = p.stock_actual !== undefined ? p.stock_actual : (p.stock || 0);
+                sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${stockActual})</option>`; 
+            });
         }
 
         window.seleccionarProductoReposicion = function(id) {
@@ -455,16 +441,9 @@
             let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
             if (cant <= 0) { alert("Ingresa una cantidad válida"); return; }
 
-            let stockAntes = Number(productoSeleccionadoRepo.stock) || 0;
-            let stockDespues = stockAntes + cant;
-            
-            // Actualizar en memoria
-            productoSeleccionadoRepo.stock = stockDespues;
-            
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Registrar reposición en movimientos_stock con auditoría
             await enviarASheets({
                 action: "registrarMovimiento",
                 movimiento: {
@@ -472,44 +451,16 @@
                     fecha: fechaActual,
                     hora: horaActual,
                     tipo: "REPOSICION",
+                    codigo_producto: productoSeleccionadoRepo.codigo,
                     producto: productoSeleccionadoRepo.nombre,
                     cantidad: cant,
-                    stockPrevio: stockAntes,
-                    stockResultante: stockDespues,
                     usuario: vendedorActual
                 }
             });
 
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
             alert("¡Stock repuesto correctamente!");
-            actualizarSelectReposicion();
-            renderizarCatalogo();
-        }
-
-        window.importarDesdeTextoExcel = async function() {
-            let texto = document.getElementById('textarea-excel').value;
-            if (!texto) return;
-            let lineas = texto.split('\n');
-            catalogo = [];
-            lineas.forEach((l, idx) => {
-                let cols = l.split('\t');
-                if (cols.length >= 4) {
-                    catalogo.push({
-                        id: 'p_' + (Date.now() + idx),
-                        codigo: cols[0].trim(),
-                        nombre: cols[1].trim(),
-                        categoria: cols[2].trim(),
-                        precio: parseFloat(cols[3].trim().replace(/\./g, '').replace(',', '.')) || 0,
-                        stock: parseInt(cols[4] ? cols[4].trim() : 0) || 0,
-                        componentesStr: cols[5] ? cols[5].trim() : ''
-                    });
-                }
-            });
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-            alert("¡Inventario subido correctamente!");
-            renderizarCatalogo();
-            actualizarSelectReposicion();
             cerrarModalInventario();
+            await sincronizarConSheets();
         }
 
         window.reiniciarCajaTurno = async function() {
