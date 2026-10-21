@@ -1,411 +1,257 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Google Sheets - Visitas y Stock</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .touch-none { touch-action: manipulation; user-select: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-</head>
-<body class="bg-slate-900 text-slate-800 font-sans antialiased touch-none min-h-screen flex justify-center">
+<script>
+    const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyeYDOWsCNdp1CCqTr74h0idERGLksY7fsOSsmjxJxzYZmvxIymIAAXwQxvenARUFCv1A/exec";
+    const ADMIN_PIN = "1234";
 
-    <div class="w-full max-w-md bg-slate-100 min-h-screen flex flex-col shadow-2xl relative overflow-hidden">
-        
-        <header class="bg-indigo-950 text-white p-3 flex justify-between items-center shadow-md z-10">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-indigo-100 shadow">📊</div>
-                <div>
-                    <h1 class="font-bold text-sm tracking-wide text-indigo-100 leading-none">POS Google Sheets</h1>
-                    <span class="text-[10px] text-indigo-300 font-medium" id="vendedor-label">Vendedor: Vendedor 1</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-1.5">
-                <select id="select-vendedor" onchange="cambiarVendedor(this.value)" class="bg-indigo-900 text-indigo-100 text-xs px-2 py-1.5 rounded-lg border border-indigo-700 outline-none font-semibold cursor-pointer">
-                    <option value="Vendedor 1">Vendedor 1</option>
-                    <option value="Vendedor 2">Vendedor 2</option>
-                    <option value="Vendedor 3">Vendedor 3</option>
-                </select>
-                <button onclick="solicitarAccesoAdmin()" class="bg-indigo-800 hover:bg-indigo-700 text-indigo-100 p-1.5 rounded-lg transition active:scale-95" title="Admin">🔐</button>
-            </div>
-        </header>
+    let catalogo = [];
+    let carrito = [];
+    let ventas = [];
+    let vendedorActual = "Vendedor 1";
+    let categoriaSeleccionada = "TODAS";
+    let productoSeleccionadoRepo = null;
 
-        <section class="bg-indigo-900 p-2.5 shadow-md flex flex-col gap-2 z-10">
-            <div class="relative">
-                <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Escriba código o nombre..." 
-                    class="w-full bg-slate-800 text-white placeholder-slate-400 text-sm font-medium px-3 py-2 rounded-xl outline-none border-2 border-indigo-700 focus:border-indigo-400 transition pr-8">
-                <button onclick="limpiarBuscador()" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-white text-xs font-bold">✕</button>
-            </div>
-            <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-medium w-full scroll-smooth" id="contenedor-categorias"></div>
-        </section>
+    window.onload = async function() {
+        await sincronizarConSheets();
+    };
 
-        <main class="flex-1 p-2.5 overflow-y-auto flex flex-col gap-3 pb-36">
-            <div class="flex justify-between items-center">
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Artículos y Visitas</span>
-                <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold" id="badge-contador">0 ítems</span>
-            </div>
-            <div class="grid grid-cols-2 gap-2" id="grilla-productos">
-                <span class="col-span-2 text-center text-slate-400 py-6 text-xs">Cargando datos desde Sheets...</span>
-            </div>
-            <button onclick="agregarMontoLibre()" class="w-full bg-slate-200 hover:bg-slate-300 border-2 border-dashed border-slate-300 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
-                <span>➕ Agregar Monto Varios (Importe Libre)</span>
-            </button>
-        </main>
-
-        <section class="fixed bottom-0 max-w-md w-full bg-white border-t border-slate-200 shadow-2xl z-20 flex flex-col">
-            <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex flex-col gap-1 max-h-28 overflow-y-auto" id="contenedor-items-carrito"></div>
-            <div class="p-3 bg-white flex flex-col gap-2">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <span class="text-xs text-slate-500 block">Total a Cobrar:</span>
-                        <span class="text-2xl font-black text-indigo-950 leading-none" id="total-carrito">$0</span>
-                    </div>
-                    <button onclick="vaciarCarrito()" class="text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded bg-red-50">Vaciar</button>
-                </div>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="abrirModalCobro()" class="col-span-3 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
-                        <span>⚡ COBRAR Y CARGAR DATOS</span>
-                    </button>
-                    <button onclick="abrirRendicion()" class="col-span-1 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl flex flex-col items-center justify-center text-[10px] p-1">
-                        <span class="text-base mb-0.5">📊</span><span>Caja</span>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- MODAL DE COBRO -->
-        <div id="modal-cobro" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
-                <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm">📝 Detalle de Venta y Visita</h3>
-                    <button onclick="cerrarModalCobro()" class="text-slate-400 font-bold">✕</button>
-                </div>
-                <div class="p-4 flex flex-col gap-3 text-xs">
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Agencia:</label>
-                        <input list="lista-agencias" id="input-agencia" placeholder="Selecciona agencia..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
-                        <datalist id="lista-agencias"></datalist>
-                    </div>
-                    <div>
-                        <label class="font-bold text-slate-700 block mb-1">Guía:</label>
-                        <input list="lista-guias" id="input-guia" placeholder="Selecciona guía..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
-                        <datalist id="lista-guias"></datalist>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="font-bold text-slate-700 block mb-1">Pax:</label>
-                            <input type="number" id="input-cant-personas" min="1" value="1" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
-                        </div>
-                        <div>
-                            <label class="font-bold text-slate-700 block mb-1">Precio Unit.:</label>
-                            <input type="number" id="input-precio-unitario" min="0" value="0" oninput="calcularTotalVisita()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 outline-none">
-                        </div>
-                    </div>
-                    <div class="bg-indigo-50 p-2.5 rounded-xl flex justify-between items-center">
-                        <span class="text-indigo-900 font-bold">Total Calculado:</span>
-                        <span class="text-lg font-black text-indigo-950" id="modal-total-calculado">$0</span>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-50 border-t flex gap-2">
-                    <button onclick="cerrarModalCobro()" class="w-1/2 bg-slate-200 font-bold py-2 rounded-xl text-xs">Cancelar</button>
-                    <button onclick="confirmarYProcesarVenta()" class="w-1/2 bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs">Confirmar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL CAJA -->
-        <div id="modal-rendicion" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                <div class="bg-slate-900 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm">📊 Rendición y Operaciones</h3>
-                    <button onclick="cerrarRendicion()" class="text-slate-400 font-bold">✕</button>
-                </div>
-                <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
-                    <div class="bg-indigo-50 p-3 rounded-xl text-center">
-                        <span class="text-indigo-600 font-bold block uppercase text-[10px]">Total Recaudado</span>
-                        <span class="text-3xl font-extrabold text-indigo-950" id="rendicion-total-general">$0</span>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-700 mb-2 uppercase text-[10px]">Historial</h4>
-                        <div class="max-h-40 overflow-y-auto border rounded-xl divide-y text-[11px]" id="lista-historial-ventas"></div>
-                    </div>
-                </div>
-                <div class="p-3 bg-slate-50 border-t">
-                    <button onclick="reiniciarCajaTurno()" class="w-full bg-red-100 text-red-700 font-bold py-2 rounded-xl text-xs">Reiniciar Caja en Sheets</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- MODAL ADMIN INVENTARIO -->
-        <div id="modal-inventario" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-                <div class="bg-indigo-950 text-white p-4 flex justify-between items-center">
-                    <h3 class="font-bold text-sm">🔐 Administración Sheets</h3>
-                    <button onclick="cerrarModalInventario()" class="text-slate-400 font-bold">✕</button>
-                </div>
-                <div class="p-4 overflow-y-auto flex flex-col gap-4 text-xs">
-                    <div class="bg-indigo-50 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-indigo-950 text-sm">📦 Reposición Rápida</h4>
-                        <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-white border p-2 rounded-lg font-bold">
-                            <option value="">-- Seleccionar --</option>
-                        </select>
-                        <div id="panel-reposicion-detalle" class="hidden flex-col gap-2 pt-2 border-t">
-                            <span class="font-bold" id="repo-prod-nombre"></span>
-                            <div class="flex gap-2">
-                                <input type="number" id="input-cant-reposicion" value="10" class="w-1/2 border p-1.5 rounded">
-                                <button onclick="ejecutarAccionStock('SUMAR')" class="w-1/2 bg-emerald-600 text-white font-bold py-1.5 rounded">Sumar Stock</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-xl flex flex-col gap-2">
-                        <h4 class="font-bold text-slate-800 text-xs">✨ Importar desde Excel</h4>
-                        <textarea id="textarea-excel" rows="3" placeholder="Pega tu Excel aquí..." class="w-full border p-2 font-mono"></textarea>
-                        <button onclick="importarDesdeTextoExcel()" class="bg-slate-800 text-white font-bold py-2 rounded">Subir a Sheets</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyeYDOWsCNdp1CCqTr74h0idERGLksY7fsOSsmjxJxzYZmvxIymIAAXwQxvenARUFCv1A/exec";
-        const ADMIN_PIN = "1234";
-
-        let catalogo = [];
-        let carrito = [];
-        let ventas = [];
-        let vendedorActual = "Vendedor 1";
-        let categoriaSeleccionada = "TODAS";
-        let productoSeleccionadoRepo = null;
-
-        window.onload = async function() {
-            await sincronizarConSheets();
-        };
-
-        async function sincronizarConSheets() {
-            try {
-                let res = await fetch(SHEETS_URL + "?action=obtenerTodo");
-                let data = await res.json();
-                catalogo = data.catalogo || [];
-                ventas = data.ventas || [];
-                renderizarCategorias();
-                renderizarCatalogo();
-                actualizarSelectReposicion();
-            } catch (err) {
-                console.error("Error sincronizando con Sheets:", err);
+    async function sincronizarConSheets() {
+        const grilla = document.getElementById('grilla-productos');
+        try {
+            // Se agrega redirect: "follow" para asegurar el seguimiento de Google Apps Script
+            let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
+            let data = await res.json();
+            
+            catalogo = data.catalogo || [];
+            ventas = data.ventas || [];
+            
+            renderizarCategorias();
+            renderizarCatalogo();
+            actualizarSelectReposicion();
+        } catch (err) {
+            console.error("Error sincronizando con Sheets:", err);
+            if (grilla) {
+                grilla.innerHTML = `<span class="col-span-2 text-center text-red-500 py-6 text-xs font-bold">⚠️ Error de conexión con Google Sheets.<br>Verifica los permisos en Apps Script ("Cualquier usuario").</span>`;
             }
         }
+    }
 
-        async function enviarA Sheets(payload) {
+    async function enviarASheets(payload) {
+        try {
             await fetch(SHEETS_URL, {
                 method: "POST",
                 mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
             });
+        } catch (e) {
+            console.error("Error al enviar a Sheets:", e);
+        }
+    }
+
+    window.solicitarAccesoAdmin = function() {
+        let pin = prompt("🔒 PIN Administrador:");
+        if (pin === ADMIN_PIN) abrirModalInventario();
+        else if (pin !== null) alert("PIN incorrecto");
+    }
+
+    function renderizarCategorias() {
+        const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
+        const cont = document.getElementById('contenedor-categorias');
+        if (!cont) return;
+        cont.innerHTML = '';
+        categorias.forEach(cat => {
+            let activa = cat === categoriaSeleccionada;
+            cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300'}">${cat}</button>`;
+        });
+    }
+
+    window.seleccionarCategoria = function(cat) {
+        categoriaSeleccionada = cat;
+        renderizarCategorias();
+        renderizarCatalogo();
+    }
+
+    function renderizarCatalogo() {
+        const grilla = document.getElementById('grilla-productos');
+        if (!grilla) return;
+        grilla.innerHTML = '';
+        
+        let filtrados = catalogo.filter(p => categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada);
+        document.getElementById('badge-contador').innerText = `${filtrados.length} items`;
+        
+        if (filtrados.length === 0) {
+            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
+            return;
         }
 
-        window.solicitarAccesoAdmin = function() {
-            let pin = prompt("🔒 PIN Administrador:");
-            if (pin === ADMIN_PIN) abrirModalInventario();
-            else if (pin !== null) alert("PIN incorrecto");
-        }
+        filtrados.forEach(prod => {
+            grilla.innerHTML += `
+                <button onclick="agregarAlCarrito('${prod.id}')" class="bg-white border p-2.5 rounded-xl shadow-sm text-left flex flex-col relative">
+                    <span class="absolute top-2 right-2 text-[10px] bg-slate-100 px-1 rounded font-bold">#${prod.codigo}</span>
+                    <span class="font-bold text-xs pr-6">${prod.nombre}</span>
+                    <div class="flex justify-between items-end mt-2">
+                        <span class="text-indigo-900 font-black">$${prod.precio}</span>
+                        <span class="text-[10px] text-slate-500">Stock: ${prod.stock}</span>
+                    </div>
+                </button>`;
+        });
+    }
 
-        function renderizarCategorias() {
-            const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
-            const cont = document.getElementById('contenedor-categorias');
-            cont.innerHTML = '';
-            categorias.forEach(cat => {
-                let activa = cat === categoriaSeleccionada;
-                cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-500 text-white font-bold' : 'bg-indigo-950 text-indigo-300'}">${cat}</button>`;
-            });
-        }
+    window.agregarAlCarrito = function(id) {
+        let prod = catalogo.find(p => p.id == id);
+        if (!prod || prod.stock <= 0) { alert("Sin stock disponible"); return; }
+        let item = carrito.find(i => i.id == id);
+        if (item) item.cantidad++;
+        else carrito.push({...prod, cantidad: 1});
+        renderizarCarrito();
+    }
 
-        window.seleccionarCategoria = function(cat) {
-            categoriaSeleccionada = cat;
-            renderizarCategorias();
-            renderizarCatalogo();
-        }
+    window.agregarMontoLibre = function() {
+        let monto = parseFloat(prompt("Monto libre ($):"));
+        if (!monto || monto <= 0) return;
+        carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
+        renderizarCarrito();
+    }
 
-        function renderizarCatalogo() {
-            const grilla = document.getElementById('grilla-productos');
-            grilla.innerHTML = '';
-            let filtrados = catalogo.filter(p => categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada);
-            document.getElementById('badge-contador').innerText = `${filtrados.length} items`;
-            
-            filtrados.forEach(prod => {
-                grilla.innerHTML += `
-                    <button onclick="agregarAlCarrito('${prod.id}')" class="bg-white border p-2.5 rounded-xl shadow-sm text-left flex flex-col relative">
-                        <span class="absolute top-2 right-2 text-[10px] bg-slate-100 px-1 rounded">#${prod.codigo}</span>
-                        <span class="font-bold text-xs pr-6">${prod.nombre}</span>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="text-indigo-900 font-black">$${prod.precio}</span>
-                            <span class="text-[10px] text-slate-500">Stock: ${prod.stock}</span>
-                        </div>
-                    </button>`;
-            });
-        }
+    function renderizarCarrito() {
+        const cont = document.getElementById('contenedor-items-carrito');
+        if (!cont) return;
+        cont.innerHTML = '';
+        let total = 0;
+        carrito.forEach(i => {
+            total += i.precio * i.cantidad;
+            cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b"><span>${i.nombre} (x${i.cantidad})</span><b>$${i.precio * i.cantidad}</b></div>`;
+        });
+        document.getElementById('total-carrito').innerText = `$${total}`;
+    }
 
-        window.agregarAlCarrito = function(id) {
-            let prod = catalogo.find(p => p.id == id);
-            if (!prod || prod.stock <= 0) { alert("Sin stock"); return; }
-            let item = carrito.find(i => i.id == id);
-            if (item) item.cantidad++;
-            else carrito.push({...prod, cantidad: 1});
-            renderizarCarrito();
-        }
+    window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
-        window.agregarMontoLibre = function() {
-            let monto = parseFloat(prompt("Monto libre ($):"));
-            if (!monto || monto <= 0) return;
-            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
-            renderizarCarrito();
-        }
+    window.abrirModalCobro = function() {
+        if (carrito.length === 0) { alert("Carrito vacío"); return; }
+        document.getElementById('modal-cobro').classList.remove('hidden');
+    }
+    window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
 
-        function renderizarCarrito() {
-            const cont = document.getElementById('contenedor-items-carrito');
-            cont.innerHTML = '';
-            let total = 0;
-            carrito.forEach(i => {
-                total += i.precio * i.cantidad;
-                cont.innerHTML += `<div class="flex justify-between text-xs py-1 border-b"><span>${i.nombre} (x${i.cantidad})</span><b>$${i.precio * i.cantidad}</b></div>`;
-            });
-            document.getElementById('total-carrito').innerText = `$${total}`;
-        }
+    window.calcularTotalVisita = function() {
+        let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+        let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+        document.getElementById('modal-total-calculado').innerText = `$${pax * precio}`;
+    }
 
-        window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
+    window.confirmarYProcesarVenta = async function() {
+        let agencia = document.getElementById('input-agencia').value || "Particular";
+        let guia = document.getElementById('input-guia').value || "Sin Guía";
+        let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
+        let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
+        let totalVisita = pax * precioU;
+        let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
-        window.abrirModalCobro = function() {
-            if (carrito.length === 0) { alert("Carrito vacío"); return; }
-            document.getElementById('modal-cobro').classList.remove('hidden');
-        }
-        window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
-
-        window.calcularTotalVisita = function() {
-            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-            let precio = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            document.getElementById('modal-total-calculado').innerText = `$${pax * precio}`;
-        }
-
-        window.confirmarYProcesarVenta = async function() {
-            let agencia = document.getElementById('input-agencia').value || "Particular";
-            let guia = document.getElementById('input-guia').value || "Sin Guía";
-            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
-            let precioU = parseFloat(document.getElementById('input-precio-unitario').value) || 0;
-            let totalVisita = pax * precioU;
-            let totalProd = carrito.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-
-            // Descontar stock localmente
-            carrito.forEach(item => {
-                if (!item.esMontoLibre) {
-                    let p = catalogo.find(x => x.id == item.id);
-                    if (p) p.stock -= item.cantidad;
-                }
-            });
-
-            let ventaObj = {
-                id: 'v_' + Date.now(),
-                fecha: new Date().toLocaleDateString(),
-                hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                vendedor: vendedorActual,
-                agencia: agencia,
-                guia: guia,
-                cantPersonas: pax,
-                precioUnitario: precioU,
-                total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
-                productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
-            };
-
-            ventas.push(ventaObj);
-            await enviarASheets({action: "guardarVenta", venta: ventaObj});
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-
-            alert("¡Venta registrada en Google Sheets!");
-            cerrarModalCobro();
-            vaciarCarrito();
-            renderizarCatalogo();
-        }
-
-        window.abrirRendicion = function() {
-            document.getElementById('modal-rendicion').classList.remove('hidden');
-            let totalGen = ventas.reduce((acc, v) => acc + Number(v.total), 0);
-            document.getElementById('rendicion-total-general').innerText = `$${totalGen}`;
-            let hist = document.getElementById('lista-historial-ventas');
-            hist.innerHTML = '';
-            ventas.slice().reverse().forEach(v => {
-                hist.innerHTML += `<div class="p-1 border-b"><b>${v.agencia}</b> - $${v.total} <br><small>${v.fecha} ${v.hora}</small></div>`;
-            });
-        }
-        window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
-
-        window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
-        window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
-
-        function actualizarSelectReposicion() {
-            let sel = document.getElementById('select-producto-reposicion');
-            sel.innerHTML = '<option value="">-- Seleccionar --</option>';
-            catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
-        }
-
-        window.seleccionarProductoReposicion = function(id) {
-            productoSeleccionadoRepo = catalogo.find(p => p.id == id);
-            if (productoSeleccionadoRepo) {
-                document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
-                document.getElementById('panel-reposicion-detalle').classList.remove('hidden');
-                document.getElementById('panel-reposicion-detalle').classList.add('flex');
+        carrito.forEach(item => {
+            if (!item.esMontoLibre) {
+                let p = catalogo.find(x => x.id == item.id);
+                if (p) p.stock -= item.cantidad;
             }
-        }
+        });
 
-        window.ejecutarAccionStock = async function() {
-            if (!productoSeleccionadoRepo) return;
-            let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
-            productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-            alert("Stock actualizado en Sheets");
-            actualizarSelectReposicion();
-            renderizarCatalogo();
-        }
+        let ventaObj = {
+            id: 'v_' + Date.now(),
+            fecha: new Date().toLocaleDateString(),
+            hora: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            vendedor: vendedorActual,
+            agencia: agencia,
+            guia: guia,
+            cantPersonas: pax,
+            precioUnitario: precioU,
+            total: totalVisita > 0 ? totalVisita + totalProd : totalProd,
+            productosDetalle: carrito.map(i => `${i.nombre} (x${i.cantidad})`).join("; ")
+        };
 
-        window.importarDesdeTextoExcel = async function() {
-            let texto = document.getElementById('textarea-excel').value;
-            if (!texto) return;
-            let lineas = texto.split('\n');
-            catalogo = [];
-            lineas.forEach((l, idx) => {
-                let cols = l.split('\t');
-                if (cols.length >= 4) {
-                    catalogo.push({
-                        id: 'p_' + (Date.now() + idx),
-                        codigo: cols[0].trim(),
-                        nombre: cols[1].trim(),
-                        categoria: cols[2].trim(),
-                        precio: parseFloat(cols[3].trim()) || 0,
-                        stock: parseInt(cols[4].trim()) || 0,
-                        componentesStr: cols[5] ? cols[5].trim() : ''
-                    });
-                }
-            });
-            await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-            alert("¡Inventario importado con éxito a Google Sheets!");
-            renderizarCatalogo();
-            actualizarSelectReposicion();
-            cerrarModalInventario();
-        }
+        ventas.push(ventaObj);
+        await enviarASheets({action: "guardarVenta", venta: ventaObj});
+        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-        window.reiniciarCajaTurno = async function() {
-            if (confirm("¿Reiniciar todas las ventas en Google Sheets?")) {
-                ventas = [];
-                await enviarASheets({action: "reiniciarVentas"});
-                abrirRendicion();
+        alert("¡Venta registrada!");
+        cerrarModalCobro();
+        vaciarCarrito();
+        renderizarCatalogo();
+    }
+
+    window.abrirRendicion = function() {
+        document.getElementById('modal-rendicion').classList.remove('hidden');
+        let totalGen = ventas.reduce((acc, v) => acc + Number(v.total), 0);
+        document.getElementById('rendicion-total-general').innerText = `$${totalGen}`;
+        let hist = document.getElementById('lista-historial-ventas');
+        if (!hist) return;
+        hist.innerHTML = '';
+        ventas.slice().reverse().forEach(v => {
+            hist.innerHTML += `<div class="p-1 border-b"><b>${v.agencia}</b> - $${v.total} <br><small>${v.fecha} ${v.hora}</small></div>`;
+        });
+    }
+    window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
+
+    window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
+    window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
+
+    function actualizarSelectReposicion() {
+        let sel = document.getElementById('select-producto-reposicion');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+        catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
+    }
+
+    window.seleccionarProductoReposicion = function(id) {
+        productoSeleccionadoRepo = catalogo.find(p => p.id == id);
+        if (productoSeleccionadoRepo) {
+            document.getElementById('repo-prod-nombre').innerText = productoSeleccionadoRepo.nombre;
+            document.getElementById('panel-reposicion-detalle').classList.remove('hidden');
+            document.getElementById('panel-reposicion-detalle').classList.add('flex');
+        }
+    }
+
+    window.ejecutarAccionStock = async function() {
+        if (!productoSeleccionadoRepo) return;
+        let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
+        productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
+        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+        alert("Stock actualizado");
+        actualizarSelectReposicion();
+        renderizarCatalogo();
+    }
+
+    window.importarDesdeTextoExcel = async function() {
+        let texto = document.getElementById('textarea-excel').value;
+        if (!texto) return;
+        let lineas = texto.split('\n');
+        catalogo = [];
+        lineas.forEach((l, idx) => {
+            let cols = l.split('\t');
+            if (cols.length >= 4) {
+                catalogo.push({
+                    id: 'p_' + (Date.now() + idx),
+                    codigo: cols[0].trim(),
+                    nombre: cols[1].trim(),
+                    categoria: cols[2].trim(),
+                    precio: parseFloat(cols[3].trim()) || 0,
+                    stock: parseInt(cols[4].trim()) || 0,
+                    componentesStr: cols[5] ? cols[5].trim() : ''
+                });
             }
-        }
+        });
+        await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
+        alert("¡Inventario subido!");
+        renderizarCatalogo();
+        actualizarSelectReposicion();
+        cerrarModalInventario();
+    }
 
-        window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
-        window.limpiarBuscador = function() { document.getElementById('input-buscador').value = ''; renderizarCatalogo(); }
-    </script>
-</body>
-</html>
+    window.reiniciarCajaTurno = async function() {
+        if (confirm("¿Reiniciar todas las ventas?")) {
+            ventas = [];
+            await enviarASheets({action: "reiniciarVentas"});
+            abrirRendicion();
+        }
+    }
+
+    window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
+    window.limpiarBuscador = function() { document.getElementById('input-buscador').value = ''; renderizarCatalogo(); }
+</script>
