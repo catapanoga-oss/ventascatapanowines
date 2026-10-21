@@ -1,5 +1,4 @@
 <script>
-    // ⚠️ REEMPLAZA CON TU NUEVA URL DE GOOGLE APPS SCRIPT (TRas hacer un Nuevo Despliegue)
     const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwYJqAUScBdKgWCzjYZN2eiSiCkXG0AIqBowQFVsddQ_2ZmkPPt7A0wKIGWTI__mvkSmA/exec";
     const ADMIN_PIN = "1234";
 
@@ -14,12 +13,12 @@
         await sincronizarConSheets();
     };
 
-    // Sincronización optimizada con Google Sheets (GET)
+    // Sincronización con Google Sheets (GET)
     async function sincronizarConSheets() {
         const grilla = document.getElementById('grilla-productos');
         try {
             let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
-            if (!res.ok) throw new Error("Error en la respuesta del servidor");
+            if (!res.ok) throw new Error("Error en la respuesta de la red");
             
             let data = await res.json();
             catalogo = data.catalogo || [];
@@ -34,13 +33,13 @@
                 grilla.innerHTML = `
                     <div class="col-span-2 text-center text-red-500 py-6 text-xs font-bold bg-red-50 p-3 rounded-xl border border-red-200">
                         ⚠️ Error de conexión con Google Sheets.<br>
-                        Verifica que el despliegue esté configurado con acceso para: <b>"Cualquier usuario"</b>.
+                        Asegúrate de que en Google Apps Script la configuración de acceso esté en: <b>"Cualquier usuario" (Anyone)</b>.
                     </div>`;
             }
         }
     }
 
-    // Envío seguro de transacciones a Google Sheets (POST)
+    // Envío de datos a Google Sheets (POST sin bloqueo CORS)
     async function enviarASheets(payload) {
         try {
             await fetch(SHEETS_URL, {
@@ -60,6 +59,7 @@
         else if (pin !== null) alert("PIN incorrecto");
     }
 
+    // Categorías y Filtros
     function renderizarCategorias() {
         const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
         const cont = document.getElementById('contenedor-categorias');
@@ -82,8 +82,8 @@
         if (!grilla) return;
         grilla.innerHTML = '';
         
-        let elBuscador = document.getElementById('input-buscador');
-        let filtroTexto = elBuscador ? elBuscador.value.trim().toLowerCase() : '';
+        let buscador = document.getElementById('input-buscador');
+        let filtroTexto = buscador ? buscador.value.trim().toLowerCase() : '';
 
         let filtrados = catalogo.filter(p => {
             let coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
@@ -95,7 +95,7 @@
         if (badge) badge.innerText = `${filtrados.length} items`;
         
         if (filtrados.length === 0) {
-            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos disponibles. Usa el panel de Admin 🔐 para importar stock.</span>`;
+            grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos en el catálogo. Usa el panel de Admin 🔐 para subir ítems.</span>`;
             return;
         }
 
@@ -114,11 +114,12 @@
 
     window.filtrarCatalogo = function() { renderizarCatalogo(); }
     window.limpiarBuscador = function() {
-        let input = document.getElementById('input-buscador');
-        if (input) input.value = '';
+        let buscador = document.getElementById('input-buscador');
+        if (buscador) buscador.value = '';
         renderizarCatalogo();
     }
 
+    // Carrito y Ventas
     window.agregarAlCarrito = function(id) {
         let prod = catalogo.find(p => p.id == id);
         if (!prod || prod.stock <= 0) { alert("Sin stock disponible"); return; }
@@ -150,7 +151,7 @@
     window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
     window.abrirModalCobro = function() {
-        if (carrito.length === 0) { alert("El carrito está vacío."); return; }
+        if (carrito.length === 0) { alert("El carrito está vacío"); return; }
         document.getElementById('modal-cobro').classList.remove('hidden');
     }
     window.cerrarModalCobro = function() { document.getElementById('modal-cobro').classList.add('hidden'); }
@@ -193,12 +194,13 @@
         await enviarASheets({action: "guardarVenta", venta: ventaObj});
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
 
-        alert("¡Venta registrada con éxito en Google Sheets!");
+        alert("¡Venta registrada correctamente en Google Sheets!");
         cerrarModalCobro();
         vaciarCarrito();
         renderizarCatalogo();
     }
 
+    // Rendición y Caja
     window.abrirRendicion = function() {
         document.getElementById('modal-rendicion').classList.remove('hidden');
         let totalGen = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
@@ -213,13 +215,14 @@
     }
     window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
 
+    // Administración e Inventario
     window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
     window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
 
     function actualizarSelectReposicion() {
         let sel = document.getElementById('select-producto-reposicion');
         if (!sel) return;
-        sel.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
+        sel.innerHTML = '<option value="">-- Seleccionar --</option>';
         catalogo.forEach(p => { sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${p.stock})</option>`; });
     }
 
@@ -237,7 +240,7 @@
         let cant = parseInt(document.getElementById('input-cant-reposicion').value) || 0;
         productoSeleccionadoRepo.stock = Number(productoSeleccionadoRepo.stock) + cant;
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("Stock actualizado correctamente en Sheets");
+        alert("Stock actualizado en Google Sheets");
         actualizarSelectReposicion();
         renderizarCatalogo();
     }
@@ -262,14 +265,14 @@
             }
         });
         await enviarASheets({action: "actualizarCatalogo", catalogo: catalogo});
-        alert("¡Inventario subido e importado a Google Sheets!");
+        alert("¡Inventario subido correctamente!");
         renderizarCatalogo();
         actualizarSelectReposicion();
         cerrarModalInventario();
     }
 
     window.reiniciarCajaTurno = async function() {
-        if (confirm("¿Está seguro de reiniciar todas las ventas grabadas en Google Sheets?")) {
+        if (confirm("¿Reiniciar todas las ventas grabadas en Google Sheets?")) {
             ventas = [];
             await enviarASheets({action: "reiniciarVentas"});
             abrirRendicion();
