@@ -17,7 +17,7 @@
                     <i class="fa-solid fa-wine-bottle text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm leading-none text-white">Vinos & Experiencia</h1>
+                    <h1 class="font-bold text-sm leading-none text-white">POS Vinos & Experiencia</h1>
                     <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Cargando...</span>
                 </div>
             </div>
@@ -31,14 +31,15 @@
         <!-- SOLAPAS DE ROLES -->
         <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
             <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-2 rounded-lg transition bg-indigo-600 text-white shadow text-sm">
-                ⚡ 1. Carga Carrito
+                ⚡ 1. Piso (Carga)
             </button>
             <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm">
                 💵 2. Caja & Cobro
                 <span id="badge-pendientes-count" class="absolute top-1 right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
             </button>
-            <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-2 rounded-lg transition text-slate-400 hover:text-white text-sm">
+            <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm">
                 📦 3. Entrega
+                <span id="badge-entregas-count" class="absolute top-1 right-2 bg-emerald-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
             </button>
         </div>
     </header>
@@ -178,16 +179,21 @@
             </div>
         </div>
 
-        <!-- ================= VISTA 3: ENTREGA ================= -->
+        <!-- ================= VISTA 3: ENTREGA CON CONTROL ANTI-DUPLICADOS ================= -->
         <div id="vista-entrega" class="hidden flex flex-col gap-3 h-full overflow-hidden">
-            <h2 class="font-bold text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-box-open"></i> Mostrador de Retiro / Entrega
-            </h2>
-            <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 text-xs text-slate-300">
-                Pedidos abonados listos para entregar al turista.
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-box-open"></i> Mostrador de Retiro / Entrega
+                </h2>
+                <!-- Filtro para alternar entre Pendientes y Entregados -->
+                <div class="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-[10px] font-bold">
+                    <button onclick="filtrarEntregas('PENDIENTE')" id="btn-subtab-pendientes" class="px-2.5 py-1 rounded-md bg-emerald-600 text-white shadow">Pendientes</button>
+                    <button onclick="filtrarEntregas('ENTREGADO')" id="btn-subtab-completados" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white">Entregados</button>
+                </div>
             </div>
-            <div id="lista-entregas" class="space-y-2 overflow-y-auto max-h-[50vh] pr-1 text-xs flex-1">
-                <span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>
+
+            <div id="lista-entregas" class="space-y-2 overflow-y-auto max-h-[60vh] pr-1 text-xs flex-1">
+                <span class="text-slate-500 text-center block py-8">No hay entregas pendientes en este momento.</span>
             </div>
         </div>
     </main>
@@ -239,12 +245,20 @@
         let listaAgencias = [];
         let listaGuias = [];
         let listaVendedores = [];
+        let entregasCompletadasLocales = []; // IDs de ventas ya despachadas
+        let estadoFiltroEntrega = "PENDIENTE";
         let vendedorActual = "Vendedor 1";
         let productoSeleccionadoRepo = null;
         let preventaSeleccionadaCobro = null;
         let productoEncontradoPisoTemporal = null;
 
         window.onload = async function() {
+            // Recuperar entregas completadas desde LocalStorage para persistencia visual
+            try {
+                let guardados = localStorage.getItem('entregasCompletadas');
+                if (guardados) entregasCompletadasLocales = JSON.parse(guardados);
+            } catch(e) {}
+
             await sincronizarConSheets();
         };
 
@@ -263,10 +277,13 @@
                 
                 actualizarDesplegablesDinamicos();
                 actualizarSelectReposicion();
-                actualizarBadgePendientes();
+                actualizarBadges();
                 
                 if(!document.getElementById('vista-caja').classList.contains('hidden')) {
                     renderizarListaPendientes();
+                }
+                if(!document.getElementById('vista-entrega').classList.contains('hidden')) {
+                    renderizarListaEntregas();
                 }
             } catch (err) {
                 console.error("Error sincronizando:", err);
@@ -317,7 +334,7 @@
             
             document.getElementById('btn-tab-piso').className = "py-2 rounded-lg transition text-slate-400 hover:text-white text-sm";
             document.getElementById('btn-tab-caja').className = "py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm";
-            document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition text-slate-400 hover:text-white text-sm";
+            document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm";
 
             if (vista === 'piso') {
                 document.getElementById('vista-piso').classList.remove('hidden');
@@ -328,18 +345,27 @@
                 renderizarListaPendientes();
             } else if (vista === 'entrega') {
                 document.getElementById('vista-entrega').classList.remove('hidden');
-                document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition bg-emerald-600 text-white shadow text-sm";
+                document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition bg-emerald-600 text-white shadow relative text-sm";
                 renderizarListaEntregas();
             }
         }
 
-        function actualizarBadgePendientes() {
-            let badge = document.getElementById('badge-pendientes-count');
+        function actualizarBadges() {
+            let badgeCaja = document.getElementById('badge-pendientes-count');
             if (preventasPendientes.length > 0) {
-                badge.innerText = preventasPendientes.length;
-                badge.classList.remove('hidden');
+                badgeCaja.innerText = preventasPendientes.length;
+                badgeCaja.classList.remove('hidden');
             } else {
-                badge.classList.add('hidden');
+                badgeCaja.classList.add('hidden');
+            }
+
+            let entregasPendientesCount = ventas.filter(v => !entregasCompletadasLocales.includes(v.id)).length;
+            let badgeEntrega = document.getElementById('badge-entregas-count');
+            if (entregasPendientesCount > 0) {
+                badgeEntrega.innerText = entregasPendientesCount;
+                badgeEntrega.classList.remove('hidden');
+            } else {
+                badgeEntrega.classList.add('hidden');
             }
         }
 
@@ -630,7 +656,7 @@
                 preventasPendientes = preventasPendientes.filter(p => p.id !== preventaSeleccionadaCobro.id);
                 cancelarCobroPreventa();
                 renderizarListaPendientes();
-                actualizarBadgePendientes();
+                actualizarBadges();
             }
         }
 
@@ -731,25 +757,66 @@
             await sincronizarConSheets();
         }
 
+        // --- GESTIÓN Y FILTRADO DEL MOSTRADOR DE ENTREGA (ANTI-DUPLICADOS) ---
+        window.filtrarEntregas = function(estado) {
+            estadoFiltroEntrega = estado;
+            
+            let btnPend = document.getElementById('btn-subtab-pendientes');
+            let btnComp = document.getElementById('btn-subtab-completados');
+
+            if (estado === 'PENDIENTE') {
+                btnPend.className = "px-2.5 py-1 rounded-md bg-emerald-600 text-white shadow font-bold";
+                btnComp.className = "px-2.5 py-1 rounded-md text-slate-400 hover:text-white";
+            } else {
+                btnComp.className = "px-2.5 py-1 rounded-md bg-indigo-600 text-white shadow font-bold";
+                btnPend.className = "px-2.5 py-1 rounded-md text-slate-400 hover:text-white";
+            }
+            renderizarListaEntregas();
+        }
+
         function renderizarListaEntregas() {
             let cont = document.getElementById('lista-entregas');
             if (!cont) return;
-            if (ventas.length === 0) {
-                cont.innerHTML = `<span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>`;
+
+            let ventasFiltradas = ventas.filter(v => {
+                let estaEntregado = entregasCompletadasLocales.includes(v.id);
+                return estadoFiltroEntrega === 'PENDIENTE' ? !estaEntregado : estaEntregado;
+            });
+
+            if (ventasFiltradas.length === 0) {
+                let msj = estadoFiltroEntrega === 'PENDIENTE' ? 'No hay pedidos pendientes de entrega.' : 'No hay entregas completadas registradas.';
+                cont.innerHTML = `<span class="text-slate-500 text-center block py-8">${msj}</span>`;
                 return;
             }
+
             cont.innerHTML = '';
-            ventas.slice().reverse().forEach(v => {
+            ventasFiltradas.slice().reverse().forEach(v => {
+                let esPend = !entregasCompletadasLocales.includes(v.id);
+                
                 cont.innerHTML += `
-                    <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center gap-2">
                         <div>
-                            <b class="text-emerald-300 text-sm">Agencia: ${v.agencia}</b> (Guía: ${v.guia})<br>
+                            <b class="text-amber-300 text-sm">Agencia: ${v.agencia}</b> (Guía: ${v.guia})<br>
                             <span class="text-slate-200 text-xs">${v.productosDetalle}</span><br>
                             <small class="text-slate-400">Total: $${Number(v.total).toLocaleString()} | ${v.fecha} ${v.hora}</small>
                         </div>
-                        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1.5 rounded-lg text-xs font-bold">Abonado ✅</span>
+                        ${esPend ? 
+                            `<button onclick="marcarEntregadoCompleto('${v.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl font-bold shadow text-xs whitespace-nowrap active:scale-95">📦 Entregar</button>` : 
+                            `<span class="bg-slate-900 text-slate-400 border border-slate-700 px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">Entregado ✔</span>`
+                        }
                     </div>`;
             });
+        }
+
+        window.marcarEntregadoCompleto = function(idVenta) {
+            if (!entregasCompletadasLocales.includes(idVenta)) {
+                entregasCompletadasLocales.push(idVenta);
+                try {
+                    localStorage.setItem('entregasCompletadas', JSON.stringify(entregasCompletadasLocales));
+                } catch(e) {}
+                actualizarBadges();
+                renderizarListaEntregas();
+            }
         }
 
         function abrirRendicion() {
@@ -813,6 +880,8 @@
         window.reiniciarCajaTurno = async function() {
             if (confirm("¿Reiniciar el historial de ventas del turno?")) {
                 ventas = [];
+                entregasCompletadasLocales = [];
+                try { localStorage.removeItem('entregasCompletadas'); } catch(e) {}
                 await enviarASheets({action: "reiniciarVentas"});
                 abrirRendicion();
             }
