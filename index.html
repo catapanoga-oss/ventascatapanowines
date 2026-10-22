@@ -3,169 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Sistema de Ventas</title>
+    <title>POS Vinos & Experiencia - Sistema Modular</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between select-none">
 
-    <!-- HEADER / BARRA SUPERIOR -->
-    <header class="bg-slate-800 border-b border-slate-700 p-3 flex justify-between items-center shadow-lg">
-        <div class="flex items-center space-x-2">
-            <div class="bg-indigo-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-lg shadow">
-                <i class="fa-solid fa-wine-bottle text-xs"></i>
+    <!-- HEADER / NAVEGACIÓN POR ROLES -->
+    <header class="bg-slate-800 border-b border-slate-700 p-2.5 flex flex-col gap-2 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-indigo-600 text-white w-7 h-7 rounded-lg flex items-center justify-center font-bold shadow">
+                    <i class="fa-solid fa-wine-bottle text-xs"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xs leading-none text-white">POS Bodega</h1>
+                    <span id="vendedor-label" class="text-[9px] text-slate-400">Vendedor: Vendedor 1</span>
+                </div>
             </div>
-            <div>
-                <h1 class="font-bold text-sm leading-none text-white">POS Vinos & Experiencia</h1>
-                <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Vendedor 1</span>
+            <div class="flex items-center space-x-1.5">
+                <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-2 py-1 rounded transition" title="Administración">
+                    🔐 Admin
+                </button>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
-            <button onclick="abrirModalPendientes()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold flex items-center shadow transition active:scale-95 relative">
-                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Caja / Pendientes
-                <span id="badge-pendientes-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+
+        <!-- SOLAPAS DE NAVEGACIÓN (PISO, CAJA, ENTREGA) -->
+        <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+            <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-1.5 rounded-lg transition bg-indigo-600 text-white shadow">
+                🛍️ 1. Piso Venta
             </button>
-            <button onclick="abrirRendicion()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold flex items-center shadow transition active:scale-95">
-                <i class="fa-solid fa-receipt mr-1"></i> Rendición
+            <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-1.5 rounded-lg transition text-slate-400 hover:text-white relative">
+                💵 2. Caja
+                <span id="badge-pendientes-count" class="absolute top-1 right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
             </button>
-            <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs p-2 rounded-lg transition active:scale-95" title="Administración">
-                🔐
+            <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-1.5 rounded-lg transition text-slate-400 hover:text-white">
+                📦 3. Entrega
             </button>
         </div>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL (ENTORNO VENDEDOR DE PISO) -->
-    <main class="flex-1 p-3 flex flex-col gap-2.5 overflow-hidden">
+    <!-- CONTENEDOR DE VISTAS -->
+    <main class="flex-1 p-3 flex flex-col overflow-hidden">
 
-        <!-- CAMPOS DIGITALIZADOS DEL PAPELITO -->
-        <div class="bg-slate-800/80 border border-slate-700 p-2 rounded-xl grid grid-cols-3 gap-2 text-xs">
-            <div>
-                <label class="text-[10px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
-                <input type="text" id="input-agencia" placeholder="Particular..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-                <label class="text-[10px] text-slate-400 block font-bold mb-0.5">GUÍA:</label>
-                <input type="text" id="input-guia" placeholder="Nombre guía..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
-            </div>
-            <div>
-                <label class="text-[10px] text-slate-400 block font-bold mb-0.5">PAX:</label>
-                <input type="number" id="input-cant-personas" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-center text-xs focus:outline-none focus:border-indigo-500">
-            </div>
-        </div>
-
-        <!-- BARRA DE BÚSQUEDA Y VENDEDOR -->
-        <div class="flex gap-2">
-            <div class="relative flex-1">
-                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Buscar producto o código..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
-                <button onclick="limpiarBuscador()" class="absolute right-2 top-1.5 text-slate-400 hover:text-white px-1 text-xs">✕</button>
-            </div>
-            <select onchange="cambiarVendedor(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl px-2 focus:outline-none">
-                <option value="Vendedor 1">Vendedor 1</option>
-                <option value="Vendedor 2">Vendedor 2</option>
-            </select>
-        </div>
-
-        <!-- CATEGORÍAS -->
-        <div id="contenedor-categorias" class="flex gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar"></div>
-
-        <!-- GRILLA DE PRODUCTOS -->
-        <div class="flex justify-between items-center px-1">
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catálogo de Productos</span>
-            <span id="badge-contador" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">0 items</span>
-        </div>
-
-        <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[36vh] pr-1">
-            <div class="col-span-2 text-center text-slate-400 py-6 text-xs">⏳ Cargando catálogo...</div>
-        </div>
-
-        <!-- CARRITO / TICKET RÁPIDO DE PISO -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 flex flex-col gap-2 shadow-xl flex-1 justify-between">
-            <div class="flex justify-between items-center border-b border-slate-700 pb-1">
-                <span class="font-bold text-xs text-slate-200 flex items-center">
-                    <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Detalle de Productos
-                </span>
-                <div class="flex gap-2">
-                    <button onclick="agregarMontoLibre()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2 py-0.5 rounded">+ Varios</button>
-                    <button onclick="vaciarCarrito()" class="text-[10px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
-                </div>
-            </div>
-
-            <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[16vh] space-y-1 my-0.5 pr-1 text-xs">
-                <span class="text-center text-slate-500 block py-2 italic">Sin productos seleccionados.</span>
-            </div>
-
-            <div class="pt-1.5 border-t border-slate-700 flex justify-between items-center">
+        <!-- ================= VISTA 1: PISO (VENDEDOR) ================= -->
+        <div id="vista-piso" class="flex flex-col gap-2.5 h-full overflow-hidden">
+            <!-- Datos del Papelito (Agencia, Guía, Pax) -->
+            <div class="bg-slate-800/90 border border-slate-700 p-2 rounded-xl grid grid-cols-3 gap-2 text-xs">
                 <div>
-                    <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Estimado</span>
-                    <span id="total-carrito" class="text-lg font-black text-emerald-400 leading-none">$0</span>
+                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
+                    <input type="text" id="input-agencia" placeholder="Particular..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
                 </div>
-                <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5">
-                    <span>📤 Enviar a Caja</span>
-                </button>
+                <div>
+                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">GUÍA:</label>
+                    <input type="text" id="input-guia" placeholder="Nombre guía..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">PAX:</label>
+                    <input type="number" id="input-cant-personas" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-center text-xs focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Buscador y Vendedor -->
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                    <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Buscar producto o código..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
+                    <button onclick="limpiarBuscador()" class="absolute right-2 top-1.5 text-slate-400 hover:text-white px-1 text-xs">✕</button>
+                </div>
+                <select onchange="cambiarVendedor(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl px-2 focus:outline-none">
+                    <option value="Vendedor 1">Vendedor 1</option>
+                    <option value="Vendedor 2">Vendedor 2</option>
+                </select>
+            </div>
+
+            <!-- Categorías -->
+            <div id="contenedor-categorias" class="flex gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar"></div>
+
+            <!-- Grilla de Productos -->
+            <div class="flex justify-between items-center px-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catálogo</span>
+                <span id="badge-contador" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">0 items</span>
+            </div>
+            <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[30vh] pr-1">
+                <div class="col-span-2 text-center text-slate-400 py-6 text-xs">⏳ Cargando catálogo...</div>
+            </div>
+
+            <!-- Carrito con Selección de Pago por Ítem -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 flex flex-col gap-2 shadow-xl flex-1 justify-between">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+                    <span class="font-bold text-xs text-slate-200 flex items-center">
+                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Detalle y Pago por Ítem
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="agregarMontoLibre()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2 py-0.5 rounded">+ Varios</button>
+                        <button onclick="vaciarCarrito()" class="text-[10px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
+                    </div>
+                </div>
+
+                <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[16vh] space-y-1.5 my-0.5 pr-1 text-xs">
+                    <span class="text-center text-slate-500 block py-2 italic">Sin productos en el carrito.</span>
+                </div>
+
+                <div class="pt-1.5 border-t border-slate-700 flex justify-between items-center">
+                    <div>
+                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Total Carrito</span>
+                        <span id="total-carrito" class="text-base font-black text-emerald-400 leading-none">$0</span>
+                    </div>
+                    <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5">
+                        <span>📤 Enviar a Caja</span>
+                    </button>
+                </div>
             </div>
         </div>
-    </main>
 
-    <!-- MODAL CAJA: PREVENTAS PENDIENTES Y COBRO -->
-    <div id="modal-pendientes" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-lg flex flex-col gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">📥 Caja: Preventas Pendientes de Pago</h3>
-                <button onclick="cerrarModalPendientes()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
+        <!-- ================= VISTA 2: CAJA ================= -->
+        <div id="vista-caja" class="hidden flex flex-col gap-3 h-full overflow-hidden">
+            <h2 class="font-bold text-xs text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-cash-register"></i> Preventas Pendientes de Cobro
+            </h2>
+            
+            <div id="lista-preventas-pendientes" class="space-y-2 overflow-y-auto max-h-[35vh] pr-1 text-xs flex-1">
+                <span class="text-slate-500 text-center block py-8">No hay preventas pendientes en este momento.</span>
             </div>
 
-            <div id="lista-preventas-pendientes" class="space-y-2 overflow-y-auto max-h-[35vh] pr-1 text-xs">
-                <span class="text-slate-500 text-center block py-4">No hay preventas pendientes.</span>
-            </div>
-
-            <!-- PANEL DE COBRO SELECCIONADO -->
-            <div id="panel-cobro-preventa" class="hidden bg-slate-900 border border-indigo-500/50 p-3 rounded-xl space-y-2.5">
-                <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+            <!-- Panel de Cobro Detallado -->
+            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-indigo-500/50 p-3 rounded-xl space-y-2.5 shadow-xl">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-indigo-300 text-xs" id="detalle-preventa-titulo">Cobrar Preventa</span>
                     <span class="font-black text-emerald-400 text-sm" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <span class="font-bold text-slate-300 text-[11px] block">Distribución de Medios de Pago:</span>
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Efectivo ($)</label>
-                        <input type="number" id="cobro-efectivo" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-center font-bold">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Tarjeta ($)</label>
-                        <input type="number" id="cobro-tarjeta" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-center font-bold">
-                    </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-0.5">Mercado Pago ($)</label>
-                        <input type="number" id="cobro-mp" value="0" min="0" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-white text-center font-bold">
-                    </div>
+                <div id="detalle-items-cobro" class="space-y-1 max-h-[15vh] overflow-y-auto text-xs pr-1">
+                    <!-- Detalle de cómo eligió pagar cada producto el vendedor/turista -->
                 </div>
 
-                <div class="flex gap-2 pt-1">
-                    <button onclick="cancelarCobroPreventa()" class="flex-1 bg-slate-800 text-slate-300 text-xs py-2 rounded-lg font-bold">Cancelar</button>
-                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-bold shadow-lg">💳 Cobrar y Descontar Stock</button>
+                <div class="flex gap-2 pt-2 border-t border-slate-700">
+                    <button onclick="cancelarCobroPreventa()" class="flex-1 bg-slate-700 text-slate-300 text-xs py-2 rounded-lg font-bold">Cancelar</button>
+                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-bold shadow-lg">💳 Confirmar Cobro y Stock</button>
                 </div>
             </div>
-
-            <button onclick="cerrarModalPendientes()" class="bg-slate-700 text-slate-200 text-xs py-2 rounded-xl font-bold mt-1">Cerrar Ventana</button>
         </div>
-    </div>
+
+        <!-- ================= VISTA 3: ENTREGA ================= -->
+        <div id="vista-entrega" class="hidden flex flex-col gap-3 h-full overflow-hidden">
+            <h2 class="font-bold text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-box-open"></i> Mostrador de Retiro / Entrega
+            </h2>
+            <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 text-xs text-slate-300">
+                Aquí el personal de depósito o entrega visualiza los pedidos ya abonados para entregar las botellas al turista.
+            </div>
+            <div id="lista-entregas" class="space-y-2 overflow-y-auto max-h-[50vh] pr-1 text-xs flex-1">
+                <span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>
+            </div>
+        </div>
+    </main>
 
     <!-- MODAL RENDICIÓN / CAJA -->
     <div id="modal-rendicion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl max-h-[85vh]">
             <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">Rendición de Caja</h3>
+                <h3 class="font-bold text-sm text-white">Rendición de Turno</h3>
                 <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
             <div class="bg-emerald-950/40 border border-emerald-800/50 p-3 rounded-xl flex justify-between items-center">
                 <span class="text-xs text-emerald-300 font-medium">Total Recaudado:</span>
                 <span id="rendicion-total-general" class="text-lg font-black text-emerald-400">$0</span>
             </div>
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historial de Turno</span>
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historial de Ventas</span>
             <div id="lista-historial-ventas" class="overflow-y-auto max-h-[40vh] space-y-1.5 text-xs divide-y divide-slate-700/50 pr-1">
-                <span class="text-center text-slate-500 block py-4">Sin ventas cobradas en el turno.</span>
+                <span class="text-center text-slate-500 block py-4">Sin ventas registradas.</span>
             </div>
             <div class="pt-2 border-t border-slate-700 flex gap-2">
                 <button onclick="reiniciarCajaTurno()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-700 text-red-300 text-xs py-2 rounded-xl font-bold">Reiniciar Turno</button>
@@ -192,11 +199,12 @@
                     <button onclick="ejecutarAccionStock()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Sumar</button>
                 </div>
             </div>
+            <button onclick="abrirRendicion()" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold">📊 Ver Rendición de Caja</button>
             <button onclick="cerrarModalInventario()" class="bg-slate-700 text-slate-200 text-xs py-2 rounded-xl font-bold">Cerrar</button>
         </div>
     </div>
 
-    <!-- SCRIPT DE APLICACIÓN -->
+    <!-- SCRIPT DE LA APLICACIÓN -->
     <script>
         const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyhMg0hOlvtGZjbJOWUa7tZ_0tDm-C4eKE9R9tgHqD-Xf2RvgBoKhJDxMmEotNZZi795A/exec";
         const ADMIN_PIN = "1234";
@@ -227,6 +235,9 @@
                 renderizarCatalogo();
                 actualizarSelectReposicion();
                 actualizarBadgePendientes();
+                if(!document.getElementById('vista-caja').classList.contains('hidden')) {
+                    renderizarListaPendientes();
+                }
             } catch (err) {
                 console.error("Error sincronizando:", err);
             }
@@ -242,6 +253,30 @@
                 });
             } catch (e) {
                 console.error("Error enviando a Sheets:", e);
+            }
+        }
+
+        // --- CONTROL DE VISTAS (MODULAR) ---
+        window.cambiarVista = function(vista) {
+            document.getElementById('vista-piso').classList.add('hidden');
+            document.getElementById('vista-caja').classList.add('hidden');
+            document.getElementById('vista-entrega').classList.add('hidden');
+            
+            document.getElementById('btn-tab-piso').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white";
+            document.getElementById('btn-tab-caja').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white relative";
+            document.getElementById('btn-tab-entrega').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white";
+
+            if (vista === 'piso') {
+                document.getElementById('vista-piso').classList.remove('hidden');
+                document.getElementById('btn-tab-piso').className = "py-1.5 rounded-lg transition bg-indigo-600 text-white shadow";
+            } else if (vista === 'caja') {
+                document.getElementById('vista-caja').classList.remove('hidden');
+                document.getElementById('btn-tab-caja').className = "py-1.5 rounded-lg transition bg-amber-600 text-white shadow relative";
+                renderizarListaPendientes();
+            } else if (vista === 'entrega') {
+                document.getElementById('vista-entrega').classList.remove('hidden');
+                document.getElementById('btn-tab-entrega').className = "py-1.5 rounded-lg transition bg-emerald-600 text-white shadow";
+                renderizarListaEntregas();
             }
         }
 
@@ -321,15 +356,18 @@
             if (!prod || stockDisp <= 0) { alert("Sin stock disponible"); return; }
             
             let item = carrito.find(i => i.id == id);
-            if (item) item.cantidad++;
-            else carrito.push({...prod, cantidad: 1});
+            if (item) {
+                item.cantidad++;
+            } else {
+                carrito.push({...prod, cantidad: 1, medioPago: "Efectivo"});
+            }
             renderizarCarrito();
         }
 
         window.agregarMontoLibre = function() {
             let monto = parseFloat(prompt("Monto libre ($):"));
             if (!monto || monto <= 0) return;
-            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true});
+            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true, medioPago: "Efectivo"});
             renderizarCarrito();
         }
 
@@ -342,21 +380,35 @@
                 let sub = i.precio * i.cantidad;
                 total += sub;
                 cont.innerHTML += `
-                    <div class="bg-slate-900/60 p-1.5 rounded-lg border border-slate-700/50 flex justify-between items-center text-xs">
-                        <span><b>${i.nombre}</b> (x${i.cantidad})</span>
-                        <div class="flex items-center gap-2">
-                            <span class="font-bold text-indigo-400">$${sub.toLocaleString()}</span>
-                            <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 px-1">✕</button>
+                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-700/60 flex flex-col gap-1">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-200">${i.nombre} (x${i.cantidad})</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-indigo-400">$${sub.toLocaleString()}</span>
+                                <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 px-1">✕</button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center pt-1 border-t border-slate-800">
+                            <span class="text-[9px] text-slate-400">Pago:</span>
+                            <select onchange="actualizarMedioPagoItem(${idx}, this.value)" class="bg-slate-800 border border-slate-700 text-[10px] text-emerald-400 font-bold rounded px-2 py-0.5 focus:outline-none">
+                                <option value="Efectivo" ${i.medioPago === 'Efectivo' ? 'selected' : ''}>💵 Efectivo</option>
+                                <option value="Tarjeta" ${i.medioPago === 'Tarjeta' ? 'selected' : ''}>💳 Tarjeta</option>
+                                <option value="Mercado Pago" ${i.medioPago === 'Mercado Pago' ? 'selected' : ''}>📱 Mercado Pago</option>
+                            </select>
                         </div>
                     </div>`;
             });
             document.getElementById('total-carrito').innerText = `$${total.toLocaleString()}`;
         }
 
+        window.actualizarMedioPagoItem = function(idx, medio) {
+            if (carrito[idx]) carrito[idx].medioPago = medio;
+        }
+
         window.removerItemCarrito = function(idx) { carrito.splice(idx, 1); renderizarCarrito(); }
         window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
-        // --- ENVIAR PREVENTA A CAJA (Acción rápida del vendedor) ---
+        // --- ENVIAR PREVENTA A CAJA ---
         window.enviarPreventaACaja = async function() {
             if (carrito.length === 0) { alert("El carrito está vacío."); return; }
             let agencia = document.getElementById('input-agencia').value.trim() || "Particular";
@@ -366,13 +418,14 @@
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
-            // Guardamos la estructura para descontar combos o productos individuales luego al cobrar
+            // Guardamos el detalle completo incluyendo el medio de pago elegido por producto individual
             let detalleStr = JSON.stringify(carrito.map(i => ({
                 id: i.id,
                 codigo: i.codigo,
                 nombre: i.nombre,
                 cantidad: i.cantidad,
                 precio: i.precio,
+                medioPago: i.medioPago,
                 componentesStr: i.componentesStr || '',
                 esMontoLibre: i.esMontoLibre || false
             })));
@@ -390,7 +443,7 @@
 
             await enviarASheets({ action: "guardarPreventa", preventa: preventaObj });
             
-            alert("✅ Preventa enviada a caja con éxito. ¡Listo para el siguiente turista!");
+            alert("✅ Preventa enviada a caja con éxito.");
             carrito = [];
             document.getElementById('input-agencia').value = '';
             document.getElementById('input-guia').value = '';
@@ -399,37 +452,28 @@
             await sincronizarConSheets();
         }
 
-        // --- GESTIÓN DE CAJA Y PENDIENTES ---
-        window.abrirModalPendientes = function() {
-            document.getElementById('modal-pendientes').classList.remove('hidden');
-            renderizarListaPendientes();
-        }
-        window.cerrarModalPendientes = function() { 
-            document.getElementById('modal-pendientes').classList.add('hidden'); 
-            cancelarCobroPreventa();
-        }
-
+        // --- RENDERIZAR VISTA CAJA ---
         function renderizarListaPendientes() {
             let cont = document.getElementById('lista-preventas-pendientes');
             if (!cont) return;
             if (preventasPendientes.length === 0) {
-                cont.innerHTML = `<span class="text-slate-500 text-center block py-4">No hay preventas pendientes en este momento.</span>`;
+                cont.innerHTML = `<span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>`;
                 return;
             }
             cont.innerHTML = '';
             preventasPendientes.forEach(p => {
                 let items = [];
                 try { items = JSON.parse(p.productosDetalle); } catch(e) { items = []; }
-                let textoResumen = items.map(i => `${i.nombre} (x${i.cantidad})`).join(', ');
+                let textoResumen = items.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join(', ');
 
                 cont.innerHTML += `
-                    <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
                         <div>
-                            <b class="text-indigo-300">Agencia: ${p.agencia}</b> (Guía: ${p.guia})<br>
+                            <b class="text-amber-300">Agencia: ${p.agencia}</b> (Guía: ${p.guia})<br>
                             <span class="text-slate-300 text-[11px]">Pax: ${p.cantPersonas} | ${textoResumen}</span><br>
-                            <small class="text-slate-500">${p.fecha} ${p.hora} - Vendedor: ${p.vendedor}</small>
+                            <small class="text-slate-400">${p.fecha} ${p.hora} - Vendedor: ${p.vendedor}</small>
                         </div>
-                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold shadow">Cobrar 💳</button>
+                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold shadow">Cobrar 💳</button>
                     </div>`;
             });
         }
@@ -444,10 +488,16 @@
 
             document.getElementById('detalle-preventa-titulo').innerText = `Agencia: ${preventaSeleccionadaCobro.agencia} (${preventaSeleccionadaCobro.guia})`;
             document.getElementById('detalle-preventa-total').innerText = `$${totalProd.toLocaleString()}`;
-            
-            document.getElementById('cobro-efectivo').value = totalProd;
-            document.getElementById('cobro-tarjeta').value = 0;
-            document.getElementById('cobro-mp').value = 0;
+
+            let contItems = document.getElementById('detalle-items-cobro');
+            contItems.innerHTML = '';
+            items.forEach(i => {
+                contItems.innerHTML += `
+                    <div class="bg-slate-900 p-1.5 rounded border border-slate-700 flex justify-between items-center">
+                        <span>${i.nombre} (x${i.cantidad})</span>
+                        <span class="text-emerald-400 font-bold">$${(i.precio * i.cantidad).toLocaleString()} <span class="text-[10px] text-slate-400">(${i.medioPago})</span></span>
+                    </div>`;
+            });
 
             document.getElementById('panel-cobro-preventa').classList.remove('hidden');
         }
@@ -460,20 +510,23 @@
         window.confirmarCobroPreventa = async function() {
             if (!preventaSeleccionadaCobro) return;
             
-            let efe = parseFloat(document.getElementById('cobro-efectivo').value) || 0;
-            let tar = parseFloat(document.getElementById('cobro-tarjeta').value) || 0;
-            let mp = parseFloat(document.getElementById('cobro-mp').value) || 0;
-            let totalCobrado = efe + tar + mp;
-
-            if (totalCobrado <= 0) { alert("Ingresa un monto válido de cobro."); return; }
-
             let items = [];
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
+
+            // Distribuir automáticamente en efectivo, tarjeta o Mercado Pago según lo elegido en cada producto
+            let pagoEfe = 0, pagoTar = 0, pagoMp = 0, totalCobrado = 0;
+            items.forEach(i => {
+                let sub = i.precio * i.cantidad;
+                totalCobrado += sub;
+                if (i.medioPago === "Efectivo") pagoEfe += sub;
+                else if (i.medioPago === "Tarjeta") pagoTar += sub;
+                else if (i.medioPago === "Mercado Pago") pagoMp += sub;
+            });
 
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Generar movimientos Kardex para descontar stock individualmente o por combo
+            // Generar movimientos de stock (Kardex) considerando componentes y combos
             let movimientos = [];
             for (let item of items) {
                 if (!item.esMontoLibre) {
@@ -514,7 +567,7 @@
                 }
             }
 
-            let textoDetalle = items.map(i => `${i.nombre} (x${i.cantidad})`).join("; ");
+            let textoDetalle = items.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join("; ");
 
             let ventaFinal = {
                 id: 'v_' + Date.now(),
@@ -526,9 +579,9 @@
                 cantPersonas: preventaSeleccionadaCobro.cantPersonas,
                 precioUnitario: 0,
                 total: totalCobrado,
-                pagoEfectivo: efe,
-                pagoTarjeta: tar,
-                pagoMercadoPago: mp,
+                pagoEfectivo: pagoEfe,
+                pagoTarjeta: pagoTar,
+                pagoMercadoPago: pagoMp,
                 productosDetalle: textoDetalle
             };
 
@@ -539,10 +592,31 @@
                 movimientos: movimientos
             });
 
-            alert("🎉 ¡Preventa cobrada, registrada en histórico seguro y stock actualizado!");
+            alert("🎉 ¡Venta cobrada, registrada de forma segura y stock descontado!");
             cancelarCobroPreventa();
             await sincronizarConSheets();
-            renderizarListaPendientes();
+        }
+
+        // --- RENDERIZAR VISTA ENTREGA ---
+        function renderizarListaEntregas() {
+            let cont = document.getElementById('lista-entregas');
+            if (!cont) return;
+            if (ventas.length === 0) {
+                cont.innerHTML = `<span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>`;
+                return;
+            }
+            cont.innerHTML = '';
+            ventas.slice().reverse().forEach(v => {
+                cont.innerHTML += `
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 flex justify-between items-center">
+                        <div>
+                            <b class="text-emerald-300">Agencia: ${v.agencia}</b> (Guía: ${v.guia})<br>
+                            <span class="text-slate-300 text-[11px]">${v.productosDetalle}</span><br>
+                            <small class="text-slate-400">Total: $${Number(v.total).toLocaleString()} | ${v.fecha} ${v.hora}</small>
+                        </div>
+                        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-1 rounded text-[10px] font-bold">Abonado ✅</span>
+                    </div>`;
+            });
         }
 
         window.abrirRendicion = function() {
