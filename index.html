@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col justify-between select-none">
 
-    <!-- HEADER / NAVEGACIÓN POR ROLES -->
+    <!-- HEADER / NAVEGACIÓN -->
     <header class="bg-slate-800 border-b border-slate-700 p-2.5 flex flex-col gap-2 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-2">
@@ -18,18 +18,17 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-sm leading-none text-white">POS Vinos & Experiencia</h1>
-                    <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Vendedor 1</span>
+                    <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Cargando...</span>
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
-                <select onchange="cambiarVendedor(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
+                <select id="select-vendedor-superior" onchange="cambiarVendedor(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
                     <option value="Vendedor 1">Vendedor 1</option>
-                    <option value="Vendedor 2">Vendedor 2</option>
                 </select>
             </div>
         </div>
 
-        <!-- SOLAPAS DE NAVEGACIÓN -->
+        <!-- SOLAPAS DE ROLES -->
         <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
             <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-2 rounded-lg transition bg-indigo-600 text-white shadow text-sm">
                 ⚡ 1. Piso (Carga)
@@ -44,17 +43,16 @@
         </div>
     </header>
 
-    <!-- CONTENEDOR DE VISTAS -->
+    <!-- CONTENEDOR VISTAS -->
     <main class="flex-1 p-3 flex flex-col overflow-hidden">
 
-        <!-- ================= VISTA 1: PISO (CARGA RÁPIDA POR CÓDIGO) ================= -->
+        <!-- ================= VISTA 1: PISO (CARGA ÁGIL POR CÓDIGO) ================= -->
         <div id="vista-piso" class="flex flex-col gap-3 h-full overflow-hidden">
             
-            <!-- ENTRADA RÁPIDA POR CÓDIGO (SIN CAMPOS MOLESTOS) -->
             <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg">
                 <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Ingreso por Código (SKU)</span>
-                    <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Modo Ágil</span>
+                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Carga por Código (SKU)</span>
+                    <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Carga Ultra Rápida</span>
                 </span>
 
                 <div class="grid grid-cols-12 gap-2">
@@ -74,11 +72,11 @@
                 </div>
             </div>
 
-            <!-- CARRITO LIMPIO Y GRANDE -->
+            <!-- CARRITO DE PISO -->
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col gap-2 shadow-xl flex-1 justify-between">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-xs text-slate-200 flex items-center">
-                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Productos en la Orden Actual
+                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Orden Actual
                     </span>
                     <div class="flex gap-2">
                         <button onclick="agregarProductoManual()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-amber-300 font-bold px-2 py-1 rounded-lg">+ Imponderable</button>
@@ -87,12 +85,12 @@
                 </div>
 
                 <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[30vh] space-y-2 my-1 pr-1 text-xs">
-                    <span class="text-center text-slate-500 block py-6 italic">Sin productos. Ingrese el código superior o cargue un imponderable.</span>
+                    <span class="text-center text-slate-500 block py-6 italic">Sin productos. Ingrese el código o un imponderable.</span>
                 </div>
 
                 <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
                     <div>
-                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Estimado</span>
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Orden</span>
                         <span id="total-carrito" class="text-xl font-black text-emerald-400 leading-none">$0</span>
                     </div>
                     <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-2">
@@ -117,33 +115,23 @@
                 <span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>
             </div>
 
-            <!-- Panel de Cobro Detallado y Datos de Papelito -->
+            <!-- Panel de Cobro Detallado con Desplegables de Sheets -->
             <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-amber-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl overflow-y-auto max-h-[42vh]">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-amber-300 text-xs" id="detalle-preventa-titulo">Gestionar Preventa</span>
                     <span class="font-black text-emerald-400 text-base" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <!-- Campos de Agencia, Guía y Pax para el Cajero (con listas desplegables o escritura manual) -->
                 <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
                     <div>
                         <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
                         <input type="text" id="caja-agencia" list="datalist-agencias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
-                        <datalist id="datalist-agencias">
-                            <option value="Particular">
-                            <option value="Turisbus">
-                            <option value="Andes Wine Tour">
-                            <option value="Mendoza Travel">
-                        </datalist>
+                        <datalist id="datalist-agencias"></datalist>
                     </div>
                     <div>
                         <label class="text-[9px] text-slate-400 block font-bold mb-0.5">GUÍA:</label>
                         <input type="text" id="caja-guia" list="datalist-guias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
-                        <datalist id="datalist-guias">
-                            <option value="Juan Pérez">
-                            <option value="María Gómez">
-                            <option value="Carlos Ruiz">
-                        </datalist>
+                        <datalist id="datalist-guias"></datalist>
                     </div>
                     <div>
                         <label class="text-[9px] text-slate-400 block font-bold mb-0.5">PAX:</label>
@@ -151,9 +139,7 @@
                     </div>
                 </div>
 
-                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[14vh] overflow-y-auto text-xs pr-1">
-                    <!-- Ítems y medios de pago individuales -->
-                </div>
+                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[14vh] overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex gap-2 pt-2 border-t border-slate-700">
                     <button onclick="anularPreventaSeleccionada()" class="bg-red-950/60 hover:bg-red-900 border border-red-700 text-red-300 text-xs px-3 py-2.5 rounded-xl font-bold">🗑️ Anular</button>
@@ -189,7 +175,6 @@
                 <span id="rendicion-total-general" class="text-lg font-black text-emerald-400">$0</span>
             </div>
 
-            <!-- Reposición rápida -->
             <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5">
                 <span class="text-[11px] font-bold text-indigo-300 block">📦 Reposición de Stock</span>
                 <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-white">
@@ -215,13 +200,16 @@
 
     <!-- SCRIPT DE LA APLICACIÓN -->
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyhMg0hOlvtGZjbJOWUa7tZ_0tDm-C4eKE9R9tgHqD-Xf2RvgBoKhJDxMmEotNZZi795A/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCgP_iFULjmvDJyqOd_yA0RFndLAk_N_mwb-P93ftbibfi1PVP_QNAQZ5jKhSh_W4qYw/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
         let carrito = [];
         let ventas = [];
         let preventasPendientes = [];
+        let listaAgencias = [];
+        let listaGuias = [];
+        let listaVendedores = [];
         let vendedorActual = "Vendedor 1";
         let productoSeleccionadoRepo = null;
         let preventaSeleccionadaCobro = null;
@@ -235,17 +223,47 @@
                 let res = await fetch(SHEETS_URL + "?action=obtenerTodo", { redirect: "follow" });
                 if (!res.ok) throw new Error("Error de red");
                 let data = await res.json();
+                
                 catalogo = data.catalogo || [];
                 ventas = data.ventas || [];
                 preventasPendientes = data.preventas || [];
+                listaAgencias = data.agencias || [];
+                listaGuias = data.guias || [];
+                listaVendedores = data.vendedores || [];
                 
+                actualizarDesplegablesDinamicos();
                 actualizarSelectReposicion();
                 actualizarBadgePendientes();
+                
                 if(!document.getElementById('vista-caja').classList.contains('hidden')) {
                     renderizarListaPendientes();
                 }
             } catch (err) {
                 console.error("Error sincronizando:", err);
+            }
+        }
+
+        function actualizarDesplegablesDinamicos() {
+            let datalistAgencias = document.getElementById('datalist-agencias');
+            if (datalistAgencias) {
+                datalistAgencias.innerHTML = '';
+                listaAgencias.forEach(a => { if (a.nombre) datalistAgencias.innerHTML += `<option value="${a.nombre}">`; });
+            }
+
+            let datalistGuias = document.getElementById('datalist-guias');
+            if (datalistGuias) {
+                datalistGuias.innerHTML = '';
+                listaGuias.forEach(g => { if (g.nombre) datalistGuias.innerHTML += `<option value="${g.nombre}">`; });
+            }
+
+            let selectVendedor = document.getElementById('select-vendedor-superior');
+            if (selectVendedor && listaVendedores.length > 0) {
+                selectVendedor.innerHTML = '';
+                listaVendedores.forEach(v => {
+                    if (v.nombre) selectVendedor.innerHTML += `<option value="${v.nombre}">${v.nombre}</option>`;
+                });
+                vendedorActual = selectVendedor.value;
+                document.getElementById('vendedor-label').innerText = `Vendedor: ${vendedorActual}`;
             }
         }
 
@@ -262,7 +280,6 @@
             }
         }
 
-        // --- CONTROL DE VISTAS (MODULAR) ---
         window.cambiarVista = function(vista) {
             document.getElementById('vista-piso').classList.add('hidden');
             document.getElementById('vista-caja').classList.add('hidden');
@@ -298,14 +315,10 @@
 
         window.solicitarAccesoAdmin = function() {
             let pin = prompt("🔒 PIN Administrador:");
-            if (pin === ADMIN_PIN) {
-                abrirRendicion();
-            } else if (pin !== null) {
-                alert("PIN incorrecto");
-            }
+            if (pin === ADMIN_PIN) abrirRendicion();
+            else if (pin !== null) alert("PIN incorrecto");
         }
 
-        // --- AGREGAR PRODUCTO POR CÓDIGO RÁPIDO ---
         window.agregarPorCodigoRapido = function() {
             let inputCod = document.getElementById('input-codigo-rapido');
             let inputCant = document.getElementById('input-cantidad-rapida');
@@ -313,15 +326,12 @@
             let codigoBuscado = inputCod.value.trim();
             let cantidad = parseInt(inputCant.value) || 1;
 
-            if (!codigoBuscado) {
-                alert("Ingrese un código de producto.");
-                return;
-            }
+            if (!codigoBuscado) { alert("Ingrese un código de producto."); return; }
 
             let prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === codigoBuscado.toLowerCase());
 
             if (!prod) {
-                alert(`⚠️ No se encontró ningún producto con el código "${codigoBuscado}". Verifique la lista en papel.`);
+                alert(`⚠️ No se encontró el producto "${codigoBuscado}". Verifique la lista en papel.`);
                 return;
             }
 
@@ -332,11 +342,8 @@
             }
 
             let item = carrito.find(i => i.id == prod.id);
-            if (item) {
-                item.cantidad += cantidad;
-            } else {
-                carrito.push({...prod, cantidad: cantidad, medioPago: "Efectivo"});
-            }
+            if (item) item.cantidad += cantidad;
+            else carrito.push({...prod, cantidad: cantidad, medioPago: "Efectivo"});
 
             inputCod.value = '';
             inputCant.value = '1';
@@ -344,7 +351,6 @@
             renderizarCarrito();
         }
 
-        // --- AGREGAR IMPONDERABLE / PRODUCTO MANUAL A MANO ---
         window.agregarProductoManual = function() {
             let nombre = prompt("Nombre del producto imponderable / especial:");
             if (!nombre) return;
@@ -401,7 +407,6 @@
         window.removerItemCarrito = function(idx) { carrito.splice(idx, 1); renderizarCarrito(); }
         window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
-        // --- ENVIAR PREVENTA A CAJA (SIN CAMPOS MOLESTOS EN PISO) ---
         window.enviarPreventaACaja = async function() {
             if (carrito.length === 0) { alert("El carrito está vacío."); return; }
 
@@ -424,9 +429,9 @@
                 fecha: fechaActual,
                 hora: horaActual,
                 vendedor: vendedorActual,
-                agencia: "Particular", // Se define en Caja
-                guia: "Sin Guía",      // Se define en Caja
-                cantPersonas: 1,       // Se define en Caja
+                agencia: "Particular",
+                guia: "Sin Guía",
+                cantPersonas: 1,
                 productosDetalle: detalleStr
             };
 
@@ -438,7 +443,6 @@
             await sincronizarConSheets();
         }
 
-        // --- RENDERIZAR VISTA CAJA ---
         function renderizarListaPendientes() {
             let cont = document.getElementById('lista-preventas-pendientes');
             if (!cont) return;
@@ -474,7 +478,6 @@
             document.getElementById('detalle-preventa-titulo').innerText = `Preventa de ${preventaSeleccionadaCobro.vendedor}`;
             document.getElementById('detalle-preventa-total').innerText = `$${totalProd.toLocaleString()}`;
 
-            // Cargar datos actuales en los inputs del cajero
             document.getElementById('caja-agencia').value = preventaSeleccionadaCobro.agencia !== "Particular" ? preventaSeleccionadaCobro.agencia : "";
             document.getElementById('caja-guia').value = preventaSeleccionadaCobro.guia !== "Sin Guía" ? preventaSeleccionadaCobro.guia : "";
             document.getElementById('caja-pax').value = preventaSeleccionadaCobro.cantPersonas || 1;
@@ -497,17 +500,12 @@
             document.getElementById('panel-cobro-preventa').classList.add('hidden');
         }
 
-        // --- ANULAR PREVENTA DESDE CAJA ---
-        window.anularPreventaSeleccionada = async function() {
+        window.anularPreventaSeleccionada = function() {
             if (!preventaSeleccionadaCobro) return;
-            if (confirm("¿Está seguro de anular y eliminar esta preventa?")) {
-                // Al procesar como anulada o eliminada, podemos simplemente marcarla o borrarla. 
-                // Usamos la misma función de procesar pero vacía o enviamos orden de borrado si deseas, 
-                // o marcamos estado ANULADA. Como nuestro script marca COBRADA, podemos recargar.
+            if (confirm("¿Está seguro de anular y descartar esta preventa?")) {
                 alert("Preventa descartada.");
-                cancelarCobroPreventa();
-                // Opcional: remover localmente de la lista
                 preventasPendientes = preventasPendientes.filter(p => p.id !== preventaSeleccionadaCobro.id);
+                cancelarCobroPreventa();
                 renderizarListaPendientes();
                 actualizarBadgePendientes();
             }
@@ -605,7 +603,6 @@
             await sincronizarConSheets();
         }
 
-        // --- RENDERIZAR VISTA ENTREGA ---
         function renderizarListaEntregas() {
             let cont = document.getElementById('lista-entregas');
             if (!cont) return;
@@ -627,7 +624,7 @@
             });
         }
 
-        window.abrirRendicion = function() {
+        function abrirRendicion() {
             document.getElementById('modal-rendicion').classList.remove('hidden');
             let totalGen = ventas.reduce((acc, v) => acc + Number(v.total || 0), 0);
             document.getElementById('rendicion-total-general').innerText = `$${totalGen.toLocaleString()}`;
@@ -638,7 +635,8 @@
                 hist.innerHTML += `<div class="p-2 border-b border-slate-700/50 text-xs flex justify-between"><div><b>${v.agencia}</b> (${v.guia})<br><small class="text-slate-400">${v.fecha} ${v.hora}</small></div><b class="text-emerald-400">$${Number(v.total).toLocaleString()}</b></div>`;
             });
         }
-        window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
+
+        function cerrarRendicion() { document.getElementById('modal-rendicion').classList.add('hidden'); }
 
         function actualizarSelectReposicion() {
             let sel = document.getElementById('select-producto-reposicion');
@@ -692,7 +690,10 @@
             }
         }
 
-        window.cambiarVendedor = function(v) { vendedorActual = v; document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`; }
+        window.cambiarVendedor = function(v) {
+            vendedorActual = v;
+            document.getElementById('vendedor-label').innerText = `Vendedor: ${v}`;
+        }
     </script>
 </body>
 </html>
