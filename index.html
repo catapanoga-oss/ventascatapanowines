@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Vinos & Experiencia - Sistema Modular</title>
+    <title>POS Bodega - Carga Rápida</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -13,31 +13,31 @@
     <header class="bg-slate-800 border-b border-slate-700 p-2.5 flex flex-col gap-2 shadow-lg">
         <div class="flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                <div class="bg-indigo-600 text-white w-7 h-7 rounded-lg flex items-center justify-center font-bold shadow">
-                    <i class="fa-solid fa-wine-bottle text-xs"></i>
+                <div class="bg-indigo-600 text-white w-8 h-8 rounded-xl flex items-center justify-center font-bold shadow">
+                    <i class="fa-solid fa-wine-bottle text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-xs leading-none text-white">POS Bodega</h1>
-                    <span id="vendedor-label" class="text-[9px] text-slate-400">Vendedor: Vendedor 1</span>
+                    <h1 class="font-bold text-sm leading-none text-white">POS Vinos & Experiencia</h1>
+                    <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Vendedor 1</span>
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
-                <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-2 py-1 rounded transition" title="Administración">
+                <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-2.5 py-1.5 rounded-lg transition" title="Administración">
                     🔐 Admin
                 </button>
             </div>
         </div>
 
-        <!-- SOLAPAS DE NAVEGACIÓN (PISO, CAJA, ENTREGA) -->
+        <!-- SOLAPAS DE NAVEGACIÓN -->
         <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
-            <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-1.5 rounded-lg transition bg-indigo-600 text-white shadow">
-                🛍️ 1. Piso Venta
+            <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-2 rounded-lg transition bg-indigo-600 text-white shadow text-sm">
+                ⚡ 1. Piso (Carga)
             </button>
-            <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-1.5 rounded-lg transition text-slate-400 hover:text-white relative">
+            <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm">
                 💵 2. Caja
-                <span id="badge-pendientes-count" class="absolute top-1 right-2 bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                <span id="badge-pendientes-count" class="absolute top-1 right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
             </button>
-            <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-1.5 rounded-lg transition text-slate-400 hover:text-white">
+            <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-2 rounded-lg transition text-slate-400 hover:text-white text-sm">
                 📦 3. Entrega
             </button>
         </div>
@@ -46,71 +46,74 @@
     <!-- CONTENEDOR DE VISTAS -->
     <main class="flex-1 p-3 flex flex-col overflow-hidden">
 
-        <!-- ================= VISTA 1: PISO (VENDEDOR) ================= -->
-        <div id="vista-piso" class="flex flex-col gap-2.5 h-full overflow-hidden">
-            <!-- Datos del Papelito (Agencia, Guía, Pax) -->
-            <div class="bg-slate-800/90 border border-slate-700 p-2 rounded-xl grid grid-cols-3 gap-2 text-xs">
+        <!-- ================= VISTA 1: PISO (CARGA RÁPIDA POR CÓDIGO) ================= -->
+        <div id="vista-piso" class="flex flex-col gap-3 h-full overflow-hidden">
+            
+            <!-- Datos del Papelito (Grandes y claros) -->
+            <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl grid grid-cols-3 gap-2">
                 <div>
-                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
-                    <input type="text" id="input-agencia" placeholder="Particular..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">GUÍA:</label>
-                    <input type="text" id="input-guia" placeholder="Nombre guía..." class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-xs focus:outline-none focus:border-indigo-500">
+                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">AGENCIA</label>
+                    <input type="text" id="input-agencia" placeholder="Ej: Particular" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-sm font-bold focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label class="text-[9px] text-slate-400 block font-bold mb-0.5">PAX:</label>
-                    <input type="number" id="input-cant-personas" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-center text-xs focus:outline-none focus:border-indigo-500">
+                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">GUÍA</label>
+                    <input type="text" id="input-guia" placeholder="Nombre..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-sm font-bold focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">PAX</label>
+                    <input type="number" id="input-cant-personas" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-center text-sm font-bold focus:outline-none focus:border-indigo-500">
                 </div>
             </div>
 
-            <!-- Buscador y Vendedor -->
-            <div class="flex gap-2">
-                <div class="relative flex-1">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-                    <input type="text" id="input-buscador" oninput="filtrarCatalogo()" placeholder="Buscar producto o código..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500">
-                    <button onclick="limpiarBuscador()" class="absolute right-2 top-1.5 text-slate-400 hover:text-white px-1 text-xs">✕</button>
+            <!-- ENTRADA RÁPIDA POR CÓDIGO (SIN GRILLA VISUAL) -->
+            <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg">
+                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Agregar por Código (SKU)</span>
+                    <select onchange="cambiarVendedor(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-2 py-1">
+                        <option value="Vendedor 1">Vendedor 1</option>
+                        <option value="Vendedor 2">Vendedor 2</option>
+                    </select>
+                </span>
+
+                <div class="grid grid-cols-12 gap-2">
+                    <div class="col-span-5">
+                        <label class="text-[10px] text-slate-400 block mb-1">Código o SKU</label>
+                        <input type="text" id="input-codigo-rapido" placeholder="Ej: 101" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="col-span-3">
+                        <label class="text-[10px] text-slate-400 block mb-1">Cantidad</label>
+                        <input type="number" id="input-cantidad-rapida" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="col-span-4 flex items-end">
+                        <button onclick="agregarPorCodigoRapido()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Agregar
+                        </button>
+                    </div>
                 </div>
-                <select onchange="cambiarVendedor(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-xl px-2 focus:outline-none">
-                    <option value="Vendedor 1">Vendedor 1</option>
-                    <option value="Vendedor 2">Vendedor 2</option>
-                </select>
             </div>
 
-            <!-- Categorías -->
-            <div id="contenedor-categorias" class="flex gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar"></div>
-
-            <!-- Grilla de Productos -->
-            <div class="flex justify-between items-center px-1">
-                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catálogo</span>
-                <span id="badge-contador" class="text-[10px] bg-indigo-950 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full font-bold">0 items</span>
-            </div>
-            <div id="grilla-productos" class="grid grid-cols-2 gap-2 overflow-y-auto max-h-[30vh] pr-1">
-                <div class="col-span-2 text-center text-slate-400 py-6 text-xs">⏳ Cargando catálogo...</div>
-            </div>
-
-            <!-- Carrito con Selección de Pago por Ítem -->
-            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-2.5 flex flex-col gap-2 shadow-xl flex-1 justify-between">
-                <div class="flex justify-between items-center border-b border-slate-700 pb-1">
+            <!-- CARRITO LIMPIO Y GRANDE -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col gap-2 shadow-xl flex-1 justify-between">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-xs text-slate-200 flex items-center">
-                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Detalle y Pago por Ítem
+                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Productos en la Orden
                     </span>
                     <div class="flex gap-2">
-                        <button onclick="agregarMontoLibre()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2 py-0.5 rounded">+ Varios</button>
-                        <button onclick="vaciarCarrito()" class="text-[10px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
+                        <button onclick="agregarMontoLibre()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2.5 py-1 rounded-lg">+ Varios</button>
+                        <button onclick="vaciarCarrito()" class="text-[11px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
                     </div>
                 </div>
 
-                <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[16vh] space-y-1.5 my-0.5 pr-1 text-xs">
-                    <span class="text-center text-slate-500 block py-2 italic">Sin productos en el carrito.</span>
+                <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[22vh] space-y-2 my-1 pr-1 text-xs">
+                    <span class="text-center text-slate-500 block py-4 italic">No hay productos cargados. Ingrese el código superior.</span>
                 </div>
 
-                <div class="pt-1.5 border-t border-slate-700 flex justify-between items-center">
+                <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
                     <div>
-                        <span class="text-[9px] text-slate-400 block uppercase font-bold">Total Carrito</span>
-                        <span id="total-carrito" class="text-base font-black text-emerald-400 leading-none">$0</span>
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Orden</span>
+                        <span id="total-carrito" class="text-xl font-black text-emerald-400 leading-none">$0</span>
                     </div>
-                    <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-1.5">
+                    <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-2">
                         <span>📤 Enviar a Caja</span>
                     </button>
                 </div>
@@ -124,23 +127,23 @@
             </h2>
             
             <div id="lista-preventas-pendientes" class="space-y-2 overflow-y-auto max-h-[35vh] pr-1 text-xs flex-1">
-                <span class="text-slate-500 text-center block py-8">No hay preventas pendientes en este momento.</span>
+                <span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>
             </div>
 
             <!-- Panel de Cobro Detallado -->
-            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-indigo-500/50 p-3 rounded-xl space-y-2.5 shadow-xl">
+            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-indigo-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-indigo-300 text-xs" id="detalle-preventa-titulo">Cobrar Preventa</span>
-                    <span class="font-black text-emerald-400 text-sm" id="detalle-preventa-total">$0</span>
+                    <span class="font-black text-emerald-400 text-base" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <div id="detalle-items-cobro" class="space-y-1 max-h-[15vh] overflow-y-auto text-xs pr-1">
-                    <!-- Detalle de cómo eligió pagar cada producto el vendedor/turista -->
+                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[16vh] overflow-y-auto text-xs pr-1">
+                    <!-- Ítems y medios de pago -->
                 </div>
 
                 <div class="flex gap-2 pt-2 border-t border-slate-700">
-                    <button onclick="cancelarCobroPreventa()" class="flex-1 bg-slate-700 text-slate-300 text-xs py-2 rounded-lg font-bold">Cancelar</button>
-                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2 rounded-lg font-bold shadow-lg">💳 Confirmar Cobro y Stock</button>
+                    <button onclick="cancelarCobroPreventa()" class="flex-1 bg-slate-700 text-slate-300 text-xs py-2.5 rounded-xl font-bold">Cancelar</button>
+                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold shadow-lg">💳 Confirmar Cobro y Stock</button>
                 </div>
             </div>
         </div>
@@ -150,8 +153,8 @@
             <h2 class="font-bold text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <i class="fa-solid fa-box-open"></i> Mostrador de Retiro / Entrega
             </h2>
-            <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 text-xs text-slate-300">
-                Aquí el personal de depósito o entrega visualiza los pedidos ya abonados para entregar las botellas al turista.
+            <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 text-xs text-slate-300">
+                Visualización de pedidos abonados listos para entregar al turista.
             </div>
             <div id="lista-entregas" class="space-y-2 overflow-y-auto max-h-[50vh] pr-1 text-xs flex-1">
                 <span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>
@@ -214,7 +217,6 @@
         let ventas = [];
         let preventasPendientes = [];
         let vendedorActual = "Vendedor 1";
-        let categoriaSeleccionada = "TODAS";
         let productoSeleccionadoRepo = null;
         let preventaSeleccionadaCobro = null;
 
@@ -231,8 +233,6 @@
                 ventas = data.ventas || [];
                 preventasPendientes = data.preventas || [];
                 
-                renderizarCategorias();
-                renderizarCatalogo();
                 actualizarSelectReposicion();
                 actualizarBadgePendientes();
                 if(!document.getElementById('vista-caja').classList.contains('hidden')) {
@@ -262,20 +262,20 @@
             document.getElementById('vista-caja').classList.add('hidden');
             document.getElementById('vista-entrega').classList.add('hidden');
             
-            document.getElementById('btn-tab-piso').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white";
-            document.getElementById('btn-tab-caja').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white relative";
-            document.getElementById('btn-tab-entrega').className = "py-1.5 rounded-lg transition text-slate-400 hover:text-white";
+            document.getElementById('btn-tab-piso').className = "py-2 rounded-lg transition text-slate-400 hover:text-white text-sm";
+            document.getElementById('btn-tab-caja').className = "py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm";
+            document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition text-slate-400 hover:text-white text-sm";
 
             if (vista === 'piso') {
                 document.getElementById('vista-piso').classList.remove('hidden');
-                document.getElementById('btn-tab-piso').className = "py-1.5 rounded-lg transition bg-indigo-600 text-white shadow";
+                document.getElementById('btn-tab-piso').className = "py-2 rounded-lg transition bg-indigo-600 text-white shadow text-sm";
             } else if (vista === 'caja') {
                 document.getElementById('vista-caja').classList.remove('hidden');
-                document.getElementById('btn-tab-caja').className = "py-1.5 rounded-lg transition bg-amber-600 text-white shadow relative";
+                document.getElementById('btn-tab-caja').className = "py-2 rounded-lg transition bg-amber-600 text-white shadow relative text-sm";
                 renderizarListaPendientes();
             } else if (vista === 'entrega') {
                 document.getElementById('vista-entrega').classList.remove('hidden');
-                document.getElementById('btn-tab-entrega').className = "py-1.5 rounded-lg transition bg-emerald-600 text-white shadow";
+                document.getElementById('btn-tab-entrega').className = "py-2 rounded-lg transition bg-emerald-600 text-white shadow text-sm";
                 renderizarListaEntregas();
             }
         }
@@ -296,71 +296,44 @@
             else if (pin !== null) alert("PIN incorrecto");
         }
 
-        function renderizarCategorias() {
-            const categorias = ["TODAS", ...new Set(catalogo.map(p => p.categoria))];
-            const cont = document.getElementById('contenedor-categorias');
-            if (!cont) return;
-            cont.innerHTML = '';
-            categorias.forEach(cat => {
-                let activa = cat === categoriaSeleccionada;
-                cont.innerHTML += `<button onclick="seleccionarCategoria('${cat}')" class="px-3 py-1 rounded-full whitespace-nowrap transition ${activa ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-800 text-slate-300'}">${cat}</button>`;
-            });
-        }
-
-        window.seleccionarCategoria = function(cat) {
-            categoriaSeleccionada = cat;
-            renderizarCategorias();
-            renderizarCatalogo();
-        }
-
-        function renderizarCatalogo() {
-            const grilla = document.getElementById('grilla-productos');
-            if (!grilla) return;
-            grilla.innerHTML = '';
-            let buscador = document.getElementById('input-buscador');
-            let filtroTexto = buscador ? buscador.value.trim().toLowerCase() : '';
-
-            let filtrados = catalogo.filter(p => {
-                let coincideCat = categoriaSeleccionada === "TODAS" || p.categoria === categoriaSeleccionada;
-                let coincideTexto = String(p.nombre || '').toLowerCase().includes(filtroTexto) || String(p.codigo || '').toLowerCase().includes(filtroTexto);
-                return coincideCat && coincideTexto;
-            });
-
-            document.getElementById('badge-contador').innerText = `${filtrados.length} items`;
+        // --- AGREGAR PRODUCTO POR CÓDIGO RÁPIDO (SIN CATÁLOGO VISUAL) ---
+        window.agregarPorCodigoRapido = function() {
+            let inputCod = document.getElementById('input-codigo-rapido');
+            let inputCant = document.getElementById('input-cantidad-rapida');
             
-            if (filtrados.length === 0) {
-                grilla.innerHTML = `<span class="col-span-2 text-center text-slate-400 py-6 text-xs">Sin productos.</span>`;
+            let codigoBuscado = inputCod.value.trim();
+            let cantidad = parseInt(inputCant.value) || 1;
+
+            if (!codigoBuscado) {
+                alert("Ingrese un código de producto.");
                 return;
             }
 
-            filtrados.forEach(prod => {
-                let stockDisp = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
-                grilla.innerHTML += `
-                    <button onclick="agregarAlCarrito('${prod.id}')" class="bg-slate-800 border border-slate-700 p-2 rounded-xl text-left flex flex-col relative hover:border-indigo-500 active:scale-95">
-                        <span class="absolute top-2 right-2 text-[9px] bg-slate-700 px-1 rounded text-slate-300">#${prod.codigo}</span>
-                        <span class="font-bold text-xs pr-5 text-slate-200">${prod.nombre}</span>
-                        <div class="flex justify-between items-end mt-2">
-                            <span class="text-indigo-400 font-black text-xs">$${Number(prod.precio).toLocaleString()}</span>
-                            <span class="text-[10px] ${stockDisp <= 0 ? 'text-red-400 font-bold' : 'text-slate-400'}">Stock: ${stockDisp}</span>
-                        </div>
-                    </button>`;
-            });
-        }
+            // Buscar en el catálogo cargado el producto que coincida con el código (SKU)
+            let prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === codigoBuscado.toLowerCase());
 
-        window.filtrarCatalogo = function() { renderizarCatalogo(); }
-        window.limpiarBuscador = function() { document.getElementById('input-buscador').value = ''; renderizarCatalogo(); }
-
-        window.agregarAlCarrito = function(id) {
-            let prod = catalogo.find(p => p.id == id);
-            let stockDisp = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
-            if (!prod || stockDisp <= 0) { alert("Sin stock disponible"); return; }
-            
-            let item = carrito.find(i => i.id == id);
-            if (item) {
-                item.cantidad++;
-            } else {
-                carrito.push({...prod, cantidad: 1, medioPago: "Efectivo"});
+            if (!prod) {
+                alert(`⚠️ No se encontró ningún producto con el código "${codigoBuscado}". Verifique la lista en papel.`);
+                return;
             }
+
+            let stockDisp = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
+            if (stockDisp <= 0) {
+                alert(`⚠️ El producto "${prod.nombre}" no tiene stock disponible.`);
+                return;
+            }
+
+            let item = carrito.find(i => i.id == prod.id);
+            if (item) {
+                item.cantidad += cantidad;
+            } else {
+                carrito.push({...prod, cantidad: cantidad, medioPago: "Efectivo"});
+            }
+
+            // Limpiar inputs de código para la siguiente lectura rápida
+            inputCod.value = '';
+            inputCant.value = '1';
+            inputCod.focus();
             renderizarCarrito();
         }
 
@@ -380,17 +353,17 @@
                 let sub = i.precio * i.cantidad;
                 total += sub;
                 cont.innerHTML += `
-                    <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-700/60 flex flex-col gap-1">
+                    <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-700/80 flex flex-col gap-1.5">
                         <div class="flex justify-between items-center text-xs">
-                            <span class="font-bold text-slate-200">${i.nombre} (x${i.cantidad})</span>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-indigo-400">$${sub.toLocaleString()}</span>
-                                <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 px-1">✕</button>
+                            <span class="font-bold text-slate-100 text-sm"><span class="text-indigo-400">[#${i.codigo}]</span> ${i.nombre} (x${i.cantidad})</span>
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-emerald-400 text-sm">$${sub.toLocaleString()}</span>
+                                <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 font-bold px-1.5 py-0.5 bg-red-950/50 rounded">✕</button>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-slate-800">
-                            <span class="text-[9px] text-slate-400">Pago:</span>
-                            <select onchange="actualizarMedioPagoItem(${idx}, this.value)" class="bg-slate-800 border border-slate-700 text-[10px] text-emerald-400 font-bold rounded px-2 py-0.5 focus:outline-none">
+                            <span class="text-[10px] text-slate-400 font-bold">Medio de Pago:</span>
+                            <select onchange="actualizarMedioPagoItem(${idx}, this.value)" class="bg-slate-800 border border-slate-700 text-xs text-emerald-400 font-bold rounded px-2 py-1 focus:outline-none">
                                 <option value="Efectivo" ${i.medioPago === 'Efectivo' ? 'selected' : ''}>💵 Efectivo</option>
                                 <option value="Tarjeta" ${i.medioPago === 'Tarjeta' ? 'selected' : ''}>💳 Tarjeta</option>
                                 <option value="Mercado Pago" ${i.medioPago === 'Mercado Pago' ? 'selected' : ''}>📱 Mercado Pago</option>
@@ -418,7 +391,6 @@
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
-            // Guardamos el detalle completo incluyendo el medio de pago elegido por producto individual
             let detalleStr = JSON.stringify(carrito.map(i => ({
                 id: i.id,
                 codigo: i.codigo,
@@ -469,11 +441,11 @@
                 cont.innerHTML += `
                     <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
                         <div>
-                            <b class="text-amber-300">Agencia: ${p.agencia}</b> (Guía: ${p.guia})<br>
-                            <span class="text-slate-300 text-[11px]">Pax: ${p.cantPersonas} | ${textoResumen}</span><br>
+                            <b class="text-amber-300 text-sm">Agencia: ${p.agencia}</b> (Guía: ${p.guia})<br>
+                            <span class="text-slate-200 text-xs">Pax: ${p.cantPersonas} | ${textoResumen}</span><br>
                             <small class="text-slate-400">${p.fecha} ${p.hora} - Vendedor: ${p.vendedor}</small>
                         </div>
-                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-bold shadow">Cobrar 💳</button>
+                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold shadow text-sm">Cobrar 💳</button>
                     </div>`;
             });
         }
@@ -493,9 +465,9 @@
             contItems.innerHTML = '';
             items.forEach(i => {
                 contItems.innerHTML += `
-                    <div class="bg-slate-900 p-1.5 rounded border border-slate-700 flex justify-between items-center">
-                        <span>${i.nombre} (x${i.cantidad})</span>
-                        <span class="text-emerald-400 font-bold">$${(i.precio * i.cantidad).toLocaleString()} <span class="text-[10px] text-slate-400">(${i.medioPago})</span></span>
+                    <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
+                        <span class="font-bold text-white">${i.nombre} (x${i.cantidad})</span>
+                        <span class="text-emerald-400 font-black">$${(i.precio * i.cantidad).toLocaleString()} <span class="text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded">(${i.medioPago})</span></span>
                     </div>`;
             });
 
@@ -513,7 +485,6 @@
             let items = [];
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
 
-            // Distribuir automáticamente en efectivo, tarjeta o Mercado Pago según lo elegido en cada producto
             let pagoEfe = 0, pagoTar = 0, pagoMp = 0, totalCobrado = 0;
             items.forEach(i => {
                 let sub = i.precio * i.cantidad;
@@ -526,7 +497,6 @@
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
-            // Generar movimientos de stock (Kardex) considerando componentes y combos
             let movimientos = [];
             for (let item of items) {
                 if (!item.esMontoLibre) {
@@ -608,13 +578,13 @@
             cont.innerHTML = '';
             ventas.slice().reverse().forEach(v => {
                 cont.innerHTML += `
-                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
                         <div>
-                            <b class="text-emerald-300">Agencia: ${v.agencia}</b> (Guía: ${v.guia})<br>
-                            <span class="text-slate-300 text-[11px]">${v.productosDetalle}</span><br>
+                            <b class="text-emerald-300 text-sm">Agencia: ${v.agencia}</b> (Guía: ${v.guia})<br>
+                            <span class="text-slate-200 text-xs">${v.productosDetalle}</span><br>
                             <small class="text-slate-400">Total: $${Number(v.total).toLocaleString()} | ${v.fecha} ${v.hora}</small>
                         </div>
-                        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-1 rounded text-[10px] font-bold">Abonado ✅</span>
+                        <span class="bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1.5 rounded-lg text-xs font-bold">Abonado ✅</span>
                     </div>`;
             });
         }
