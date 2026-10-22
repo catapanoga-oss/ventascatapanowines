@@ -46,27 +46,30 @@
     <!-- CONTENEDOR VISTAS -->
     <main class="flex-1 p-3 flex flex-col overflow-hidden">
 
-        <!-- ================= VISTA 1: PISO (CARGA ÁGIL POR CÓDIGO) ================= -->
+        <!-- ================= VISTA 1: PISO (BÚSQUEDA INTELIGENTE POR CÓDIGO O NOMBRE) ================= -->
         <div id="vista-piso" class="flex flex-col gap-3 h-full overflow-hidden">
             
-            <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg">
+            <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg relative">
                 <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Carga por Código (SKU)</span>
-                    <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Carga Ultra Rápida</span>
+                    <span><i class="fa-solid fa-magnifying-glass mr-1 text-indigo-400"></i> Búsqueda por Código o Iniciales/Nombre</span>
+                    <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Carga Ágil</span>
                 </span>
 
-                <div class="grid grid-cols-12 gap-2">
-                    <div class="col-span-5">
-                        <label class="text-[10px] text-slate-400 block mb-1">Código</label>
-                        <input type="text" id="input-codigo-rapido" placeholder="Ej: 101" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
+                <div class="grid grid-cols-12 gap-2 relative">
+                    <div class="col-span-8 relative">
+                        <label class="text-[10px] text-slate-400 block mb-1">Escriba código, iniciales o nombre</label>
+                        <input type="text" id="input-busqueda-piso" oninput="sugerirProductosPiso()" placeholder="Ej: 101 o Malbec..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-sm focus:outline-none focus:border-indigo-500" autocomplete="off">
+                        
+                        <!-- Lista desplegable de sugerencias automáticas -->
+                        <div id="sugerencias-piso" class="absolute left-0 right-0 top-16 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 hidden divide-y divide-slate-800"></div>
                     </div>
-                    <div class="col-span-3">
+                    <div class="col-span-2">
                         <label class="text-[10px] text-slate-400 block mb-1">Cant.</label>
                         <input type="number" id="input-cantidad-rapida" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
                     </div>
-                    <div class="col-span-4 flex items-end">
-                        <button onclick="agregarPorCodigoRapido()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1">
-                            <i class="fa-solid fa-plus"></i> Cargar
+                    <div class="col-span-2 flex items-end">
+                        <button onclick="agregarSeleccionadoPisoDirecto()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center">
+                            <i class="fa-solid fa-plus text-sm"></i>
                         </button>
                     </div>
                 </div>
@@ -85,7 +88,7 @@
                 </div>
 
                 <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[30vh] space-y-2 my-1 pr-1 text-xs">
-                    <span class="text-center text-slate-500 block py-6 italic">Sin productos. Ingrese el código o un imponderable.</span>
+                    <span class="text-center text-slate-500 block py-6 italic">Sin productos. Escriba arriba o cargue un imponderable.</span>
                 </div>
 
                 <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
@@ -115,14 +118,15 @@
                 <span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>
             </div>
 
-            <!-- Panel de Cobro Detallado con Desplegables de Sheets -->
-            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-amber-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl overflow-y-auto max-h-[42vh]">
+            <!-- Panel de Cobro Detallado con Visita y Desplegables -->
+            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-amber-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl overflow-y-auto max-h-[46vh]">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-amber-300 text-xs" id="detalle-preventa-titulo">Gestionar Preventa</span>
                     <span class="font-black text-emerald-400 text-base" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
+                <!-- Datos de Agencia, Guía -->
+                <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
                     <div>
                         <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
                         <input type="text" id="caja-agencia" list="datalist-agencias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
@@ -133,13 +137,28 @@
                         <input type="text" id="caja-guia" list="datalist-guias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
                         <datalist id="datalist-guias"></datalist>
                     </div>
-                    <div>
-                        <label class="text-[9px] text-slate-400 block font-bold mb-0.5">PAX:</label>
-                        <input type="number" id="caja-pax" value="1" min="1" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-center text-xs">
+                </div>
+
+                <!-- Datos de Visita: Pax, Precio Unitario Visita, Total Visita -->
+                <div class="bg-indigo-950/40 border border-indigo-800/50 p-2.5 rounded-xl space-y-2">
+                    <span class="text-[10px] font-bold text-indigo-300 block uppercase">🎟️ Configuración de Visita / Entrada</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Cant. Pax</label>
+                            <input type="number" id="caja-pax" value="1" min="0" oninput="recalcularGranTotalCaja()" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-center text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Precio x Pax ($)</label>
+                            <input type="number" id="caja-precio-pax" value="0" min="0" oninput="recalcularGranTotalCaja()" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white text-center text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-400 block mb-0.5">Total Visita ($)</label>
+                            <input type="text" id="caja-total-visita" readonly value="$0" class="w-full bg-slate-900/50 border border-slate-700/50 rounded p-1 text-indigo-300 text-center text-xs font-black">
+                        </div>
                     </div>
                 </div>
 
-                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[14vh] overflow-y-auto text-xs pr-1"></div>
+                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[12vh] overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex gap-2 pt-2 border-t border-slate-700">
                     <button onclick="anularPreventaSeleccionada()" class="bg-red-950/60 hover:bg-red-900 border border-red-700 text-red-300 text-xs px-3 py-2.5 rounded-xl font-bold">🗑️ Anular</button>
@@ -200,7 +219,7 @@
 
     <!-- SCRIPT DE LA APLICACIÓN -->
     <script>
-        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzCgP_iFULjmvDJyqOd_yA0RFndLAk_N_mwb-P93ftbibfi1PVP_QNAQZ5jKhSh_W4qYw/exec";
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwD4SkAwUOyYiMiPA9ZQ-3xND3ma_-LxivtdoPO7Fo6wDTkqyawItcz6NG_BMYoAnPX_Q/exec";
         const ADMIN_PIN = "1234";
 
         let catalogo = [];
@@ -213,6 +232,7 @@
         let vendedorActual = "Vendedor 1";
         let productoSeleccionadoRepo = null;
         let preventaSeleccionadaCobro = null;
+        let productoEncontradoPisoTemporal = null;
 
         window.onload = async function() {
             await sincronizarConSheets();
@@ -319,19 +339,68 @@
             else if (pin !== null) alert("PIN incorrecto");
         }
 
-        window.agregarPorCodigoRapido = function() {
-            let inputCod = document.getElementById('input-codigo-rapido');
-            let inputCant = document.getElementById('input-cantidad-rapida');
+        // --- BÚSQUEDA INTELIGENTE POR INICIALES / NOMBRE / CÓDIGO ---
+        window.sugerirProductosPiso = function() {
+            let texto = document.getElementById('input-busqueda-piso').value.trim().toLowerCase();
+            let contenedor = document.getElementById('sugerencias-piso');
             
-            let codigoBuscado = inputCod.value.trim();
-            let cantidad = parseInt(inputCant.value) || 1;
+            if (!texto) {
+                contenedor.classList.add('hidden');
+                contenedor.innerHTML = '';
+                productoEncontradoPisoTemporal = null;
+                return;
+            }
 
-            if (!codigoBuscado) { alert("Ingrese un código de producto."); return; }
+            let matches = catalogo.filter(p => 
+                String(p.codigo || '').toLowerCase().includes(texto) || 
+                String(p.nombre || '').toLowerCase().includes(texto)
+            );
 
-            let prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === codigoBuscado.toLowerCase());
+            if (matches.length === 0) {
+                contenedor.classList.add('hidden');
+                contenedor.innerHTML = '';
+                productoEncontradoPisoTemporal = null;
+                return;
+            }
+
+            contenedor.innerHTML = '';
+            matches.forEach(prod => {
+                let stockDisp = prod.stock_actual !== undefined ? prod.stock_actual : (prod.stock || 0);
+                contenedor.innerHTML += `
+                    <div onclick="seleccionarProductoPiso('${prod.id}')" class="p-2.5 hover:bg-slate-800 cursor-pointer flex justify-between items-center text-xs">
+                        <div>
+                            <span class="text-indigo-400 font-bold">[#${prod.codigo}]</span> 
+                            <span class="text-white font-medium">${prod.nombre}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-emerald-400 font-bold">$${Number(prod.precio).toLocaleString()}</span>
+                            <span class="text-[10px] text-slate-400 block">Stock: ${stockDisp}</span>
+                        </div>
+                    </div>`;
+            });
+            contenedor.classList.remove('hidden');
+        }
+
+        window.seleccionarProductoPiso = function(id) {
+            let prod = catalogo.find(p => p.id == id);
+            if (!prod) return;
+            productoEncontradoPisoTemporal = prod;
+            document.getElementById('input-busqueda-piso').value = `#${prod.codigo} - ${prod.nombre}`;
+            document.getElementById('sugerencias-piso').classList.add('hidden');
+        }
+
+        window.agregarSeleccionadoPisoDirecto = function() {
+            let textoInput = document.getElementById('input-busqueda-piso').value.trim();
+            let cantidad = parseInt(document.getElementById('input-cantidad-rapida').value) || 1;
+
+            let prod = productoEncontradoPisoTemporal;
+            if (!prod && textoInput) {
+                // Si tipeó directamente un código exacto o inicial sin hacer click en la sugerencia
+                prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === textoInput.toLowerCase() || String(p.nombre).trim().toLowerCase().includes(textoInput.toLowerCase()));
+            }
 
             if (!prod) {
-                alert(`⚠️ No se encontró el producto "${codigoBuscado}". Verifique la lista en papel.`);
+                alert("⚠️ Seleccione o escriba un producto válido de la búsqueda.");
                 return;
             }
 
@@ -345,9 +414,10 @@
             if (item) item.cantidad += cantidad;
             else carrito.push({...prod, cantidad: cantidad, medioPago: "Efectivo"});
 
-            inputCod.value = '';
-            inputCant.value = '1';
-            inputCod.focus();
+            document.getElementById('input-busqueda-piso').value = '';
+            document.getElementById('input-cantidad-rapida').value = '1';
+            productoEncontradoPisoTemporal = null;
+            document.getElementById('sugerencias-piso').classList.add('hidden');
             renderizarCarrito();
         }
 
@@ -432,6 +502,7 @@
                 agencia: "Particular",
                 guia: "Sin Guía",
                 cantPersonas: 1,
+                precioUnitario: 0,
                 productosDetalle: detalleStr
             };
 
@@ -471,16 +542,17 @@
             preventaSeleccionadaCobro = preventasPendientes.find(p => p.id == id);
             if (!preventaSeleccionadaCobro) return;
 
-            let items = [];
-            try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
-            let totalProd = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
-
             document.getElementById('detalle-preventa-titulo').innerText = `Preventa de ${preventaSeleccionadaCobro.vendedor}`;
-            document.getElementById('detalle-preventa-total').innerText = `$${totalProd.toLocaleString()}`;
-
+            
             document.getElementById('caja-agencia').value = preventaSeleccionadaCobro.agencia !== "Particular" ? preventaSeleccionadaCobro.agencia : "";
             document.getElementById('caja-guia').value = preventaSeleccionadaCobro.guia !== "Sin Guía" ? preventaSeleccionadaCobro.guia : "";
             document.getElementById('caja-pax').value = preventaSeleccionadaCobro.cantPersonas || 1;
+            document.getElementById('caja-precio-pax').value = preventaSeleccionadaCobro.precioUnitario || 0;
+
+            recalcularGranTotalCaja();
+
+            let items = [];
+            try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
 
             let contItems = document.getElementById('detalle-items-cobro');
             contItems.innerHTML = '';
@@ -493,6 +565,22 @@
             });
 
             document.getElementById('panel-cobro-preventa').classList.remove('hidden');
+        }
+
+        window.recalcularGranTotalCaja = function() {
+            if (!preventaSeleccionadaCobro) return;
+            let pax = parseInt(document.getElementById('caja-pax').value) || 0;
+            let precioPax = parseFloat(document.getElementById('caja-precio-pax').value) || 0;
+            let totalVisita = pax * precioPax;
+
+            document.getElementById('caja-total-visita').value = `$${totalVisita.toLocaleString()}`;
+
+            let items = [];
+            try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
+            let totalProd = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+
+            let granTotal = totalProd + totalVisita;
+            document.getElementById('detalle-preventa-total').innerText = `$${granTotal.toLocaleString()}`;
         }
 
         window.cancelarCobroPreventa = function() {
@@ -517,18 +605,24 @@
             let agencia = document.getElementById('caja-agencia').value.trim() || "Particular";
             let guia = document.getElementById('caja-guia').value.trim() || "Sin Guía";
             let pax = parseInt(document.getElementById('caja-pax').value) || 1;
+            let precioPax = parseFloat(document.getElementById('caja-precio-pax').value) || 0;
+            let totalVisita = pax * precioPax;
 
             let items = [];
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
 
-            let pagoEfe = 0, pagoTar = 0, pagoMp = 0, totalCobrado = 0;
+            let pagoEfe = 0, pagoTar = 0, pagoMp = 0, totalProd = 0;
             items.forEach(i => {
                 let sub = i.precio * i.cantidad;
-                totalCobrado += sub;
+                totalProd += sub;
                 if (i.medioPago === "Efectivo") pagoEfe += sub;
                 else if (i.medioPago === "Tarjeta") pagoTar += sub;
                 else if (i.medioPago === "Mercado Pago") pagoMp += sub;
             });
+
+            // Si hay costo de visita, por defecto se suma al pago en efectivo en caja (o se puede registrar)
+            pagoEfe += totalVisita;
+            let granTotal = totalProd + totalVisita;
 
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -573,7 +667,8 @@
                 }
             }
 
-            let textoDetalle = items.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join("; ");
+            let textoDetalle = totalVisita > 0 ? `Visita (${pax} Pax) [+$${totalVisita.toLocaleString()}]; ` : "";
+            textoDetalle += items.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join("; ");
 
             let ventaFinal = {
                 id: 'v_' + Date.now(),
@@ -583,8 +678,8 @@
                 agencia: agencia,
                 guia: guia,
                 cantPersonas: pax,
-                precioUnitario: 0,
-                total: totalCobrado,
+                precioUnitario: precioPax,
+                total: granTotal,
                 pagoEfectivo: pagoEfe,
                 pagoTarjeta: pagoTar,
                 pagoMercadoPago: pagoMp,
