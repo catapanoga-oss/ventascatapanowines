@@ -22,9 +22,10 @@
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
-                <button onclick="solicitarAccesoAdmin()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-2.5 py-1.5 rounded-lg transition" title="Administración">
-                    🔐 Admin
-                </button>
+                <select onchange="cambiarVendedor(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-200 rounded-lg px-2 py-1.5 focus:outline-none">
+                    <option value="Vendedor 1">Vendedor 1</option>
+                    <option value="Vendedor 2">Vendedor 2</option>
+                </select>
             </div>
         </div>
 
@@ -34,7 +35,7 @@
                 ⚡ 1. Piso (Carga)
             </button>
             <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm">
-                💵 2. Caja
+                💵 2. Caja & Cobro
                 <span id="badge-pendientes-count" class="absolute top-1 right-2 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold hidden">0</span>
             </button>
             <button onclick="cambiarVista('entrega')" id="btn-tab-entrega" class="py-2 rounded-lg transition text-slate-400 hover:text-white text-sm">
@@ -49,44 +50,25 @@
         <!-- ================= VISTA 1: PISO (CARGA RÁPIDA POR CÓDIGO) ================= -->
         <div id="vista-piso" class="flex flex-col gap-3 h-full overflow-hidden">
             
-            <!-- Datos del Papelito (Grandes y claros) -->
-            <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl grid grid-cols-3 gap-2">
-                <div>
-                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">AGENCIA</label>
-                    <input type="text" id="input-agencia" placeholder="Ej: Particular" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-sm font-bold focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">GUÍA</label>
-                    <input type="text" id="input-guia" placeholder="Nombre..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-sm font-bold focus:outline-none focus:border-indigo-500">
-                </div>
-                <div>
-                    <label class="text-[11px] text-indigo-400 block font-bold mb-1">PAX</label>
-                    <input type="number" id="input-cant-personas" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-white text-center text-sm font-bold focus:outline-none focus:border-indigo-500">
-                </div>
-            </div>
-
-            <!-- ENTRADA RÁPIDA POR CÓDIGO (SIN GRILLA VISUAL) -->
+            <!-- ENTRADA RÁPIDA POR CÓDIGO (SIN CAMPOS MOLESTOS) -->
             <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg">
                 <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Agregar por Código (SKU)</span>
-                    <select onchange="cambiarVendedor(this.value)" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-2 py-1">
-                        <option value="Vendedor 1">Vendedor 1</option>
-                        <option value="Vendedor 2">Vendedor 2</option>
-                    </select>
+                    <span><i class="fa-solid fa-barcode mr-1 text-indigo-400"></i> Ingreso por Código (SKU)</span>
+                    <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Modo Ágil</span>
                 </span>
 
                 <div class="grid grid-cols-12 gap-2">
                     <div class="col-span-5">
-                        <label class="text-[10px] text-slate-400 block mb-1">Código o SKU</label>
+                        <label class="text-[10px] text-slate-400 block mb-1">Código</label>
                         <input type="text" id="input-codigo-rapido" placeholder="Ej: 101" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
                     </div>
                     <div class="col-span-3">
-                        <label class="text-[10px] text-slate-400 block mb-1">Cantidad</label>
+                        <label class="text-[10px] text-slate-400 block mb-1">Cant.</label>
                         <input type="number" id="input-cantidad-rapida" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
                     </div>
                     <div class="col-span-4 flex items-end">
                         <button onclick="agregarPorCodigoRapido()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1">
-                            <i class="fa-solid fa-plus"></i> Agregar
+                            <i class="fa-solid fa-plus"></i> Cargar
                         </button>
                     </div>
                 </div>
@@ -96,21 +78,21 @@
             <div class="bg-slate-800 border border-slate-700 rounded-2xl p-3 flex flex-col gap-2 shadow-xl flex-1 justify-between">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-xs text-slate-200 flex items-center">
-                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Productos en la Orden
+                        <i class="fa-solid fa-cart-shopping mr-1.5 text-indigo-400"></i> Productos en la Orden Actual
                     </span>
                     <div class="flex gap-2">
-                        <button onclick="agregarMontoLibre()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-indigo-300 font-bold px-2.5 py-1 rounded-lg">+ Varios</button>
+                        <button onclick="agregarProductoManual()" class="text-[11px] bg-slate-700 hover:bg-slate-600 text-amber-300 font-bold px-2 py-1 rounded-lg">+ Imponderable</button>
                         <button onclick="vaciarCarrito()" class="text-[11px] text-red-400 hover:text-red-300 font-bold px-1">Vaciar</button>
                     </div>
                 </div>
 
-                <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[22vh] space-y-2 my-1 pr-1 text-xs">
-                    <span class="text-center text-slate-500 block py-4 italic">No hay productos cargados. Ingrese el código superior.</span>
+                <div id="contenedor-items-carrito" class="overflow-y-auto max-h-[30vh] space-y-2 my-1 pr-1 text-xs">
+                    <span class="text-center text-slate-500 block py-6 italic">Sin productos. Ingrese el código superior o cargue un imponderable.</span>
                 </div>
 
                 <div class="pt-2 border-t border-slate-700 flex justify-between items-center">
                     <div>
-                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Orden</span>
+                        <span class="text-[10px] text-slate-400 block uppercase font-bold">Total Estimado</span>
                         <span id="total-carrito" class="text-xl font-black text-emerald-400 leading-none">$0</span>
                     </div>
                     <button onclick="enviarPreventaACaja()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-lg transition active:scale-95 flex items-center gap-2">
@@ -122,28 +104,61 @@
 
         <!-- ================= VISTA 2: CAJA ================= -->
         <div id="vista-caja" class="hidden flex flex-col gap-3 h-full overflow-hidden">
-            <h2 class="font-bold text-xs text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <i class="fa-solid fa-cash-register"></i> Preventas Pendientes de Cobro
-            </h2>
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-xs text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-cash-register"></i> Preventas Pendientes de Cobro
+                </h2>
+                <button onclick="solicitarAccesoAdmin()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-lg">
+                    🔐 Admin / Rendición
+                </button>
+            </div>
             
-            <div id="lista-preventas-pendientes" class="space-y-2 overflow-y-auto max-h-[35vh] pr-1 text-xs flex-1">
+            <div id="lista-preventas-pendientes" class="space-y-2 overflow-y-auto max-h-[32vh] pr-1 text-xs flex-1">
                 <span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>
             </div>
 
-            <!-- Panel de Cobro Detallado -->
-            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-indigo-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl">
+            <!-- Panel de Cobro Detallado y Datos de Papelito -->
+            <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-amber-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl overflow-y-auto max-h-[42vh]">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
-                    <span class="font-bold text-indigo-300 text-xs" id="detalle-preventa-titulo">Cobrar Preventa</span>
+                    <span class="font-bold text-amber-300 text-xs" id="detalle-preventa-titulo">Gestionar Preventa</span>
                     <span class="font-black text-emerald-400 text-base" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[16vh] overflow-y-auto text-xs pr-1">
-                    <!-- Ítems y medios de pago -->
+                <!-- Campos de Agencia, Guía y Pax para el Cajero (con listas desplegables o escritura manual) -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
+                    <div>
+                        <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
+                        <input type="text" id="caja-agencia" list="datalist-agencias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
+                        <datalist id="datalist-agencias">
+                            <option value="Particular">
+                            <option value="Turisbus">
+                            <option value="Andes Wine Tour">
+                            <option value="Mendoza Travel">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-slate-400 block font-bold mb-0.5">GUÍA:</label>
+                        <input type="text" id="caja-guia" list="datalist-guias" placeholder="Elegir o escribir..." class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-xs">
+                        <datalist id="datalist-guias">
+                            <option value="Juan Pérez">
+                            <option value="María Gómez">
+                            <option value="Carlos Ruiz">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-slate-400 block font-bold mb-0.5">PAX:</label>
+                        <input type="number" id="caja-pax" value="1" min="1" class="w-full bg-slate-800 border border-slate-700 rounded p-1 text-white text-center text-xs">
+                    </div>
+                </div>
+
+                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[14vh] overflow-y-auto text-xs pr-1">
+                    <!-- Ítems y medios de pago individuales -->
                 </div>
 
                 <div class="flex gap-2 pt-2 border-t border-slate-700">
-                    <button onclick="cancelarCobroPreventa()" class="flex-1 bg-slate-700 text-slate-300 text-xs py-2.5 rounded-xl font-bold">Cancelar</button>
-                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold shadow-lg">💳 Confirmar Cobro y Stock</button>
+                    <button onclick="anularPreventaSeleccionada()" class="bg-red-950/60 hover:bg-red-900 border border-red-700 text-red-300 text-xs px-3 py-2.5 rounded-xl font-bold">🗑️ Anular</button>
+                    <button onclick="cancelarCobroPreventa()" class="bg-slate-700 text-slate-300 text-xs py-2.5 px-3 rounded-xl font-bold">Cerrar</button>
+                    <button onclick="confirmarCobroPreventa()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs py-2.5 rounded-xl font-bold shadow-lg">💳 Cobrar y Descontar Stock</button>
                 </div>
             </div>
         </div>
@@ -154,7 +169,7 @@
                 <i class="fa-solid fa-box-open"></i> Mostrador de Retiro / Entrega
             </h2>
             <div class="bg-slate-800 p-3 rounded-2xl border border-slate-700 text-xs text-slate-300">
-                Visualización de pedidos abonados listos para entregar al turista.
+                Pedidos abonados listos para entregar al turista.
             </div>
             <div id="lista-entregas" class="space-y-2 overflow-y-auto max-h-[50vh] pr-1 text-xs flex-1">
                 <span class="text-slate-500 text-center block py-8">No hay entregas pendientes recientes.</span>
@@ -162,48 +177,39 @@
         </div>
     </main>
 
-    <!-- MODAL RENDICIÓN / CAJA -->
+    <!-- MODAL RENDICIÓN / ADMIN -->
     <div id="modal-rendicion" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-sm flex flex-col gap-3 shadow-2xl max-h-[85vh]">
             <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">Rendición de Turno</h3>
+                <h3 class="font-bold text-sm text-white">Rendición y Stock (Admin)</h3>
                 <button onclick="cerrarRendicion()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
             </div>
             <div class="bg-emerald-950/40 border border-emerald-800/50 p-3 rounded-xl flex justify-between items-center">
-                <span class="text-xs text-emerald-300 font-medium">Total Recaudado:</span>
+                <span class="text-xs text-emerald-300 font-medium">Total Recaudado Turno:</span>
                 <span id="rendicion-total-general" class="text-lg font-black text-emerald-400">$0</span>
             </div>
-            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historial de Ventas</span>
-            <div id="lista-historial-ventas" class="overflow-y-auto max-h-[40vh] space-y-1.5 text-xs divide-y divide-slate-700/50 pr-1">
-                <span class="text-center text-slate-500 block py-4">Sin ventas registradas.</span>
-            </div>
-            <div class="pt-2 border-t border-slate-700 flex gap-2">
-                <button onclick="reiniciarCajaTurno()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-700 text-red-300 text-xs py-2 rounded-xl font-bold">Reiniciar Turno</button>
-                <button onclick="cerrarRendicion()" class="w-full bg-slate-700 text-slate-200 text-xs py-2 rounded-xl font-bold">Cerrar</button>
-            </div>
-        </div>
-    </div>
 
-    <!-- MODAL INVENTARIO / ADMIN -->
-    <div id="modal-inventario" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 w-full max-w-md flex flex-col gap-3 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <h3 class="font-bold text-sm text-white">⚙️ Administración de Stock</h3>
-                <button onclick="cerrarModalInventario()" class="text-slate-400 hover:text-white text-sm font-bold">✕</button>
-            </div>
-            <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2">
-                <span class="text-xs font-bold text-indigo-300 block">📦 Reposición Individual</span>
-                <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white">
-                    <option value="">-- Seleccionar --</option>
+            <!-- Reposición rápida -->
+            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-700 space-y-1.5">
+                <span class="text-[11px] font-bold text-indigo-300 block">📦 Reposición de Stock</span>
+                <select id="select-producto-reposicion" onchange="seleccionarProductoReposicion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded p-1.5 text-xs text-white">
+                    <option value="">-- Seleccionar producto --</option>
                 </select>
                 <div id="panel-reposicion-detalle" class="hidden flex gap-2 items-center pt-1">
                     <span id="repo-prod-nombre" class="text-xs text-slate-300 font-bold flex-1 truncate"></span>
-                    <input type="number" id="input-cant-reposicion" placeholder="Cant" class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-1.5 text-xs text-white text-center">
-                    <button onclick="ejecutarAccionStock()" class="bg-indigo-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">Sumar</button>
+                    <input type="number" id="input-cant-reposicion" placeholder="Cant" class="w-16 bg-slate-800 border border-slate-700 rounded p-1 text-xs text-white text-center">
+                    <button onclick="ejecutarAccionStock()" class="bg-indigo-600 text-white text-xs px-2.5 py-1 rounded font-bold">Sumar</button>
                 </div>
             </div>
-            <button onclick="abrirRendicion()" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold">📊 Ver Rendición de Caja</button>
-            <button onclick="cerrarModalInventario()" class="bg-slate-700 text-slate-200 text-xs py-2 rounded-xl font-bold">Cerrar</button>
+
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Historial de Turno</span>
+            <div id="lista-historial-ventas" class="overflow-y-auto max-h-[25vh] space-y-1.5 text-xs divide-y divide-slate-700/50 pr-1">
+                <span class="text-center text-slate-500 block py-2">Sin ventas registradas.</span>
+            </div>
+            <div class="pt-2 border-t border-slate-700 flex gap-2">
+                <button onclick="reiniciarCajaTurno()" class="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-700 text-red-300 text-xs py-2 rounded-lg font-bold">Reiniciar Turno</button>
+                <button onclick="cerrarRendicion()" class="w-full bg-slate-700 text-slate-200 text-xs py-2 rounded-lg font-bold">Cerrar</button>
+            </div>
         </div>
     </div>
 
@@ -292,11 +298,14 @@
 
         window.solicitarAccesoAdmin = function() {
             let pin = prompt("🔒 PIN Administrador:");
-            if (pin === ADMIN_PIN) abrirModalInventario();
-            else if (pin !== null) alert("PIN incorrecto");
+            if (pin === ADMIN_PIN) {
+                abrirRendicion();
+            } else if (pin !== null) {
+                alert("PIN incorrecto");
+            }
         }
 
-        // --- AGREGAR PRODUCTO POR CÓDIGO RÁPIDO (SIN CATÁLOGO VISUAL) ---
+        // --- AGREGAR PRODUCTO POR CÓDIGO RÁPIDO ---
         window.agregarPorCodigoRapido = function() {
             let inputCod = document.getElementById('input-codigo-rapido');
             let inputCant = document.getElementById('input-cantidad-rapida');
@@ -309,7 +318,6 @@
                 return;
             }
 
-            // Buscar en el catálogo cargado el producto que coincida con el código (SKU)
             let prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === codigoBuscado.toLowerCase());
 
             if (!prod) {
@@ -330,17 +338,29 @@
                 carrito.push({...prod, cantidad: cantidad, medioPago: "Efectivo"});
             }
 
-            // Limpiar inputs de código para la siguiente lectura rápida
             inputCod.value = '';
             inputCant.value = '1';
             inputCod.focus();
             renderizarCarrito();
         }
 
-        window.agregarMontoLibre = function() {
-            let monto = parseFloat(prompt("Monto libre ($):"));
-            if (!monto || monto <= 0) return;
-            carrito.push({id: 'v_'+Date.now(), codigo: "VAR", nombre: "Varios", precio: monto, cantidad: 1, esMontoLibre: true, medioPago: "Efectivo"});
+        // --- AGREGAR IMPONDERABLE / PRODUCTO MANUAL A MANO ---
+        window.agregarProductoManual = function() {
+            let nombre = prompt("Nombre del producto imponderable / especial:");
+            if (!nombre) return;
+            let precio = parseFloat(prompt("Precio unitario ($):")) || 0;
+            if (precio <= 0) { alert("Precio inválido"); return; }
+            let cantidad = parseInt(prompt("Cantidad:", "1")) || 1;
+
+            carrito.push({
+                id: 'man_' + Date.now(),
+                codigo: "MAN",
+                nombre: nombre,
+                precio: precio,
+                cantidad: cantidad,
+                esMontoLibre: true,
+                medioPago: "Efectivo"
+            });
             renderizarCarrito();
         }
 
@@ -353,12 +373,12 @@
                 let sub = i.precio * i.cantidad;
                 total += sub;
                 cont.innerHTML += `
-                    <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-700/80 flex flex-col gap-1.5">
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-700/80 flex flex-col gap-1.5">
                         <div class="flex justify-between items-center text-xs">
                             <span class="font-bold text-slate-100 text-sm"><span class="text-indigo-400">[#${i.codigo}]</span> ${i.nombre} (x${i.cantidad})</span>
                             <div class="flex items-center gap-3">
                                 <span class="font-black text-emerald-400 text-sm">$${sub.toLocaleString()}</span>
-                                <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 font-bold px-1.5 py-0.5 bg-red-950/50 rounded">✕</button>
+                                <button onclick="removerItemCarrito(${idx})" class="text-red-400 hover:text-red-300 font-bold px-2 py-0.5 bg-red-950/50 rounded">✕</button>
                             </div>
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-slate-800">
@@ -381,12 +401,9 @@
         window.removerItemCarrito = function(idx) { carrito.splice(idx, 1); renderizarCarrito(); }
         window.vaciarCarrito = function() { carrito = []; renderizarCarrito(); }
 
-        // --- ENVIAR PREVENTA A CAJA ---
+        // --- ENVIAR PREVENTA A CAJA (SIN CAMPOS MOLESTOS EN PISO) ---
         window.enviarPreventaACaja = async function() {
             if (carrito.length === 0) { alert("El carrito está vacío."); return; }
-            let agencia = document.getElementById('input-agencia').value.trim() || "Particular";
-            let guia = document.getElementById('input-guia').value.trim() || "Sin Guía";
-            let pax = parseInt(document.getElementById('input-cant-personas').value) || 1;
 
             let fechaActual = new Date().toLocaleDateString();
             let horaActual = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -407,9 +424,9 @@
                 fecha: fechaActual,
                 hora: horaActual,
                 vendedor: vendedorActual,
-                agencia: agencia,
-                guia: guia,
-                cantPersonas: pax,
+                agencia: "Particular", // Se define en Caja
+                guia: "Sin Guía",      // Se define en Caja
+                cantPersonas: 1,       // Se define en Caja
                 productosDetalle: detalleStr
             };
 
@@ -417,9 +434,6 @@
             
             alert("✅ Preventa enviada a caja con éxito.");
             carrito = [];
-            document.getElementById('input-agencia').value = '';
-            document.getElementById('input-guia').value = '';
-            document.getElementById('input-cant-personas').value = '1';
             renderizarCarrito();
             await sincronizarConSheets();
         }
@@ -436,16 +450,15 @@
             preventasPendientes.forEach(p => {
                 let items = [];
                 try { items = JSON.parse(p.productosDetalle); } catch(e) { items = []; }
-                let textoResumen = items.map(i => `${i.nombre} (x${i.cantidad} - ${i.medioPago})`).join(', ');
+                let textoResumen = items.map(i => `${i.nombre} (x${i.cantidad})`).join(', ');
 
                 cont.innerHTML += `
                     <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
                         <div>
-                            <b class="text-amber-300 text-sm">Agencia: ${p.agencia}</b> (Guía: ${p.guia})<br>
-                            <span class="text-slate-200 text-xs">Pax: ${p.cantPersonas} | ${textoResumen}</span><br>
-                            <small class="text-slate-400">${p.fecha} ${p.hora} - Vendedor: ${p.vendedor}</small>
+                            <b class="text-amber-300 text-xs">Vendedor: ${p.vendedor}</b> (${p.fecha} ${p.hora})<br>
+                            <span class="text-slate-200 text-xs">${textoResumen}</span>
                         </div>
-                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl font-bold shadow text-sm">Cobrar 💳</button>
+                        <button onclick="seleccionarPreventaParaCobrar('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-xl font-bold shadow text-xs">Atender 💵</button>
                     </div>`;
             });
         }
@@ -458,8 +471,13 @@
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
             let totalProd = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
-            document.getElementById('detalle-preventa-titulo').innerText = `Agencia: ${preventaSeleccionadaCobro.agencia} (${preventaSeleccionadaCobro.guia})`;
+            document.getElementById('detalle-preventa-titulo').innerText = `Preventa de ${preventaSeleccionadaCobro.vendedor}`;
             document.getElementById('detalle-preventa-total').innerText = `$${totalProd.toLocaleString()}`;
+
+            // Cargar datos actuales en los inputs del cajero
+            document.getElementById('caja-agencia').value = preventaSeleccionadaCobro.agencia !== "Particular" ? preventaSeleccionadaCobro.agencia : "";
+            document.getElementById('caja-guia').value = preventaSeleccionadaCobro.guia !== "Sin Guía" ? preventaSeleccionadaCobro.guia : "";
+            document.getElementById('caja-pax').value = preventaSeleccionadaCobro.cantPersonas || 1;
 
             let contItems = document.getElementById('detalle-items-cobro');
             contItems.innerHTML = '';
@@ -479,9 +497,29 @@
             document.getElementById('panel-cobro-preventa').classList.add('hidden');
         }
 
+        // --- ANULAR PREVENTA DESDE CAJA ---
+        window.anularPreventaSeleccionada = async function() {
+            if (!preventaSeleccionadaCobro) return;
+            if (confirm("¿Está seguro de anular y eliminar esta preventa?")) {
+                // Al procesar como anulada o eliminada, podemos simplemente marcarla o borrarla. 
+                // Usamos la misma función de procesar pero vacía o enviamos orden de borrado si deseas, 
+                // o marcamos estado ANULADA. Como nuestro script marca COBRADA, podemos recargar.
+                alert("Preventa descartada.");
+                cancelarCobroPreventa();
+                // Opcional: remover localmente de la lista
+                preventasPendientes = preventasPendientes.filter(p => p.id !== preventaSeleccionadaCobro.id);
+                renderizarListaPendientes();
+                actualizarBadgePendientes();
+            }
+        }
+
         window.confirmarCobroPreventa = async function() {
             if (!preventaSeleccionadaCobro) return;
             
+            let agencia = document.getElementById('caja-agencia').value.trim() || "Particular";
+            let guia = document.getElementById('caja-guia').value.trim() || "Sin Guía";
+            let pax = parseInt(document.getElementById('caja-pax').value) || 1;
+
             let items = [];
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
 
@@ -519,7 +557,7 @@
                                 codigo_producto: codComponente,
                                 producto: nombreProd + " (vía " + item.nombre + ")",
                                 cantidad: -cantTotalDescontar,
-                                usuario: vendedorActual
+                                usuario: preventaSeleccionadaCobro.vendedor
                             });
                         }
                     } else {
@@ -531,7 +569,7 @@
                             codigo_producto: item.codigo,
                             producto: item.nombre,
                             cantidad: -Number(item.cantidad),
-                            usuario: vendedorActual
+                            usuario: preventaSeleccionadaCobro.vendedor
                         });
                     }
                 }
@@ -544,9 +582,9 @@
                 fecha: fechaActual,
                 hora: horaActual,
                 vendedor: preventaSeleccionadaCobro.vendedor,
-                agencia: preventaSeleccionadaCobro.agencia,
-                guia: preventaSeleccionadaCobro.guia,
-                cantPersonas: preventaSeleccionadaCobro.cantPersonas,
+                agencia: agencia,
+                guia: guia,
+                cantPersonas: pax,
                 precioUnitario: 0,
                 total: totalCobrado,
                 pagoEfectivo: pagoEfe,
@@ -562,7 +600,7 @@
                 movimientos: movimientos
             });
 
-            alert("🎉 ¡Venta cobrada, registrada de forma segura y stock descontado!");
+            alert("🎉 ¡Venta cobrada con éxito, stock descontado y enviada a entrega!");
             cancelarCobroPreventa();
             await sincronizarConSheets();
         }
@@ -602,13 +640,10 @@
         }
         window.cerrarRendicion = function() { document.getElementById('modal-rendicion').classList.add('hidden'); }
 
-        window.abrirModalInventario = function() { document.getElementById('modal-inventario').classList.remove('hidden'); }
-        window.cerrarModalInventario = function() { document.getElementById('modal-inventario').classList.add('hidden'); }
-
         function actualizarSelectReposicion() {
             let sel = document.getElementById('select-producto-reposicion');
             if (!sel) return;
-            sel.innerHTML = '<option value="">-- Seleccionar --</option>';
+            sel.innerHTML = '<option value="">-- Seleccionar producto --</option>';
             catalogo.forEach(p => { 
                 let stockAct = p.stock_actual !== undefined ? p.stock_actual : (p.stock || 0);
                 sel.innerHTML += `<option value="${p.id}">${p.nombre} (Stock: ${stockAct})</option>`; 
@@ -645,7 +680,7 @@
                 }
             });
             alert("¡Stock repuesto correctamente!");
-            cerrarModalInventario();
+            document.getElementById('panel-reposicion-detalle').classList.add('hidden');
             await sincronizarConSheets();
         }
 
