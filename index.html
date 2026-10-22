@@ -17,7 +17,7 @@
                     <i class="fa-solid fa-wine-bottle text-sm"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-sm leading-none text-white">POS Vinos & Experiencia</h1>
+                    <h1 class="font-bold text-sm leading-none text-white">Vinos & Experiencia</h1>
                     <span id="vendedor-label" class="text-[10px] text-slate-400">Vendedor: Cargando...</span>
                 </div>
             </div>
@@ -31,7 +31,7 @@
         <!-- SOLAPAS DE ROLES -->
         <div class="grid grid-cols-3 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-700 text-xs font-bold">
             <button onclick="cambiarVista('piso')" id="btn-tab-piso" class="py-2 rounded-lg transition bg-indigo-600 text-white shadow text-sm">
-                ⚡ 1. Piso (Carga)
+                ⚡ 1. Carga Carrito
             </button>
             <button onclick="cambiarVista('caja')" id="btn-tab-caja" class="py-2 rounded-lg transition text-slate-400 hover:text-white relative text-sm">
                 💵 2. Caja & Cobro
@@ -46,30 +46,38 @@
     <!-- CONTENEDOR VISTAS -->
     <main class="flex-1 p-3 flex flex-col overflow-hidden">
 
-        <!-- ================= VISTA 1: PISO (BÚSQUEDA INTELIGENTE POR CÓDIGO O NOMBRE) ================= -->
+        <!-- ================= VISTA 1: PISO ================= -->
         <div id="vista-piso" class="flex flex-col gap-3 h-full overflow-hidden">
             
             <div class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex flex-col gap-2.5 shadow-lg relative">
                 <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                    <span><i class="fa-solid fa-magnifying-glass mr-1 text-indigo-400"></i> Búsqueda por Código o Iniciales/Nombre</span>
+                    <span><i class="fa-solid fa-magnifying-glass mr-1 text-indigo-400"></i> Búsqueda por Código o Nombre</span>
                     <span class="text-[10px] text-indigo-300 bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">Carga Ágil</span>
                 </span>
 
                 <div class="grid grid-cols-12 gap-2 relative">
-                    <div class="col-span-8 relative">
-                        <label class="text-[10px] text-slate-400 block mb-1">Escriba código, iniciales o nombre</label>
+                    <div class="col-span-6 relative">
+                        <label class="text-[10px] text-slate-400 block mb-1">Código / Iniciales / Nombre</label>
                         <input type="text" id="input-busqueda-piso" oninput="sugerirProductosPiso()" placeholder="Ej: 101 o Malbec..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-sm focus:outline-none focus:border-indigo-500" autocomplete="off">
                         
-                        <!-- Lista desplegable de sugerencias automáticas -->
+                        <!-- Sugerencias automáticas -->
                         <div id="sugerencias-piso" class="absolute left-0 right-0 top-16 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto z-50 hidden divide-y divide-slate-800"></div>
                     </div>
-                    <div class="col-span-2">
-                        <label class="text-[10px] text-slate-400 block mb-1">Cant.</label>
-                        <input type="number" id="input-cantidad-rapida" value="1" min="1" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center text-sm focus:outline-none focus:border-indigo-500">
+
+                    <!-- Cantidad con Botones + y - -->
+                    <div class="col-span-3">
+                        <label class="text-[10px] text-slate-400 block mb-1">Cantidad</label>
+                        <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl p-1">
+                            <button onclick="cambiarCantRapida(-1)" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg flex items-center justify-center text-xs">-</button>
+                            <input type="number" id="input-cantidad-rapida" value="1" min="1" class="w-full bg-transparent text-white font-bold text-center text-sm focus:outline-none">
+                            <button onclick="cambiarCantRapida(1)" class="w-7 h-7 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg flex items-center justify-center text-xs">+</button>
+                        </div>
                     </div>
-                    <div class="col-span-2 flex items-end">
-                        <button onclick="agregarSeleccionadoPisoDirecto()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center">
-                            <i class="fa-solid fa-plus text-sm"></i>
+
+                    <!-- Botón de Añadir -->
+                    <div class="col-span-3 flex items-end">
+                        <button onclick="agregarSeleccionadoPisoDirecto()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-3 rounded-xl shadow transition active:scale-95 flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Añadir
                         </button>
                     </div>
                 </div>
@@ -118,14 +126,13 @@
                 <span class="text-slate-500 text-center block py-8">No hay preventas pendientes.</span>
             </div>
 
-            <!-- Panel de Cobro Detallado con Visita y Desplegables -->
+            <!-- Panel de Cobro Detallado -->
             <div id="panel-cobro-preventa" class="hidden bg-slate-800 border border-amber-500/50 p-3 rounded-2xl space-y-2.5 shadow-xl overflow-y-auto max-h-[46vh]">
                 <div class="flex justify-between items-center border-b border-slate-700 pb-1.5">
                     <span class="font-bold text-amber-300 text-xs" id="detalle-preventa-titulo">Gestionar Preventa</span>
                     <span class="font-black text-emerald-400 text-base" id="detalle-preventa-total">$0</span>
                 </div>
 
-                <!-- Datos de Agencia, Guía -->
                 <div class="grid grid-cols-2 gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700">
                     <div>
                         <label class="text-[9px] text-slate-400 block font-bold mb-0.5">AGENCIA:</label>
@@ -139,7 +146,6 @@
                     </div>
                 </div>
 
-                <!-- Datos de Visita: Pax, Precio Unitario Visita, Total Visita -->
                 <div class="bg-indigo-950/40 border border-indigo-800/50 p-2.5 rounded-xl space-y-2">
                     <span class="text-[10px] font-bold text-indigo-300 block uppercase">🎟️ Configuración de Visita / Entrada</span>
                     <div class="grid grid-cols-3 gap-2">
@@ -158,7 +164,11 @@
                     </div>
                 </div>
 
-                <div id="detalle-items-cobro" class="space-y-1.5 max-h-[12vh] overflow-y-auto text-xs pr-1"></div>
+                <!-- Detalle de ítems con opción de corregir medio de pago -->
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-slate-400 block uppercase">Productos y Modificación de Pago:</span>
+                    <div id="detalle-items-cobro" class="space-y-1.5 max-h-[14vh] overflow-y-auto text-xs pr-1"></div>
+                </div>
 
                 <div class="flex gap-2 pt-2 border-t border-slate-700">
                     <button onclick="anularPreventaSeleccionada()" class="bg-red-950/60 hover:bg-red-900 border border-red-700 text-red-300 text-xs px-3 py-2.5 rounded-xl font-bold">🗑️ Anular</button>
@@ -339,7 +349,16 @@
             else if (pin !== null) alert("PIN incorrecto");
         }
 
-        // --- BÚSQUEDA INTELIGENTE POR INICIALES / NOMBRE / CÓDIGO ---
+        // --- CONTROL DE CANTIDAD CON BOTONES + Y - ---
+        window.cambiarCantRapida = function(delta) {
+            let input = document.getElementById('input-cantidad-rapida');
+            let val = parseInt(input.value) || 1;
+            val += delta;
+            if (val < 1) val = 1;
+            input.value = val;
+        }
+
+        // --- BÚSQUEDA INTELIGENTE PISO ---
         window.sugerirProductosPiso = function() {
             let texto = document.getElementById('input-busqueda-piso').value.trim().toLowerCase();
             let contenedor = document.getElementById('sugerencias-piso');
@@ -395,7 +414,6 @@
 
             let prod = productoEncontradoPisoTemporal;
             if (!prod && textoInput) {
-                // Si tipeó directamente un código exacto o inicial sin hacer click en la sugerencia
                 prod = catalogo.find(p => String(p.codigo).trim().toLowerCase() === textoInput.toLowerCase() || String(p.nombre).trim().toLowerCase().includes(textoInput.toLowerCase()));
             }
 
@@ -549,22 +567,40 @@
             document.getElementById('caja-pax').value = preventaSeleccionadaCobro.cantPersonas || 1;
             document.getElementById('caja-precio-pax').value = preventaSeleccionadaCobro.precioUnitario || 0;
 
-            recalcularGranTotalCaja();
-
             let items = [];
             try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
+            items.forEach(i => { if (!i.medioPago) i.medioPago = "Efectivo"; });
+            preventaSeleccionadaCobro.itemsModificables = items;
 
+            renderizarItemsCajaEnCobro();
+            document.getElementById('panel-cobro-preventa').classList.remove('hidden');
+        }
+
+        window.renderizarItemsCajaEnCobro = function() {
             let contItems = document.getElementById('detalle-items-cobro');
             contItems.innerHTML = '';
-            items.forEach(i => {
+            if (!preventaSeleccionadaCobro) return;
+            let items = preventaSeleccionadaCobro.itemsModificables || [];
+            
+            items.forEach((i, idx) => {
                 contItems.innerHTML += `
-                    <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
-                        <span class="font-bold text-white">${i.nombre} (x${i.cantidad})</span>
-                        <span class="text-emerald-400 font-black">$${(i.precio * i.cantidad).toLocaleString()} <span class="text-[10px] text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded">(${i.medioPago})</span></span>
+                    <div class="bg-slate-900 p-2 rounded-xl border border-slate-700 flex justify-between items-center text-xs gap-2">
+                        <span class="font-bold text-white truncate flex-1">${i.nombre} (x${i.cantidad})</span>
+                        <span class="text-emerald-400 font-black">$${(i.precio * i.cantidad).toLocaleString()}</span>
+                        <select onchange="actualizarMedioPagoCaja(${idx}, this.value)" class="bg-slate-800 border border-slate-700 text-[10px] text-emerald-400 font-bold rounded px-2 py-1 focus:outline-none">
+                            <option value="Efectivo" ${i.medioPago === 'Efectivo' ? 'selected' : ''}>💵 Efectivo</option>
+                            <option value="Tarjeta" ${i.medioPago === 'Tarjeta' ? 'selected' : ''}>💳 Tarjeta</option>
+                            <option value="Mercado Pago" ${i.medioPago === 'Mercado Pago' ? 'selected' : ''}>📱 Mercado Pago</option>
+                        </select>
                     </div>`;
             });
+            recalcularGranTotalCaja();
+        }
 
-            document.getElementById('panel-cobro-preventa').classList.remove('hidden');
+        window.actualizarMedioPagoCaja = function(idx, medio) {
+            if (preventaSeleccionadaCobro && preventaSeleccionadaCobro.itemsModificables[idx]) {
+                preventaSeleccionadaCobro.itemsModificables[idx].medioPago = medio;
+            }
         }
 
         window.recalcularGranTotalCaja = function() {
@@ -575,8 +611,7 @@
 
             document.getElementById('caja-total-visita').value = `$${totalVisita.toLocaleString()}`;
 
-            let items = [];
-            try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
+            let items = preventaSeleccionadaCobro.itemsModificables || [];
             let totalProd = items.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
 
             let granTotal = totalProd + totalVisita;
@@ -608,8 +643,7 @@
             let precioPax = parseFloat(document.getElementById('caja-precio-pax').value) || 0;
             let totalVisita = pax * precioPax;
 
-            let items = [];
-            try { items = JSON.parse(preventaSeleccionadaCobro.productosDetalle); } catch(e) { items = []; }
+            let items = preventaSeleccionadaCobro.itemsModificables || [];
 
             let pagoEfe = 0, pagoTar = 0, pagoMp = 0, totalProd = 0;
             items.forEach(i => {
@@ -620,7 +654,6 @@
                 else if (i.medioPago === "Mercado Pago") pagoMp += sub;
             });
 
-            // Si hay costo de visita, por defecto se suma al pago en efectivo en caja (o se puede registrar)
             pagoEfe += totalVisita;
             let granTotal = totalProd + totalVisita;
 
